@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web GL Exercise</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="controls">
+    <p><a href="..">Home</a></p>
+    <p><a href="https://webglfundamentals.org/webgl/lessons/webgl-how-it-works.html">Tutorial</a></p>
+    <hr>
+    <fieldset>
+      <legend>Controls</legend>
+      <label for="ctrl-translate-x">Translate X</label>
+      <input id="ctrl-translate-x" step="any" type="range" min="0" max="2" value="1">
+
+      <label for="ctrl-translate-y">Translate Y</label>
+      <input id="ctrl-translate-y" step="any" type="range" min="0" max="2" value="1">
+
+      <label for="ctrl-rotation">Rotate</label>
+      <input id="ctrl-rotation" step="any" type="range" min="0" max="10" value="0">
+
+      <label for="ctrl-scale-x">Scale X</label>
+      <input id="ctrl-scale-x" step="any" type="range" min="0.01" max="3" value="1">
+
+      <label for="ctrl-scale-y">Scale Y</label>
+      <input id="ctrl-scale-y" step="any" type="range" min="0.1" max="3" value="1">
+    </fieldset>
+    <br>
+  </div>
+  <div class="container" id="container"></div>
+  <script type="module">
+    import { main } from './index.js';
+    main();
+  </script>
+</body>
+</html>
