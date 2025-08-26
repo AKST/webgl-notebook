@@ -1,0 +1,33 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-black: #1a1a1a;
+  --bg-msgrey: #c6c6c6;
+  --bg-greygreen: rgb(112, 121, 110);
+  --border-inset-grey: 3px inset #c6c6c6;
+  --border-outset-grey: 3px outset #c6c6c6;
+}
+
+html, body {
+  background: white;
+}
+
+body { margin: 0 }
+
+canvas {
+  display: block;
+  height: 100dvh;
+  width: 100dvw;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+#controls {
+  background: white;
+  padding: 0 8px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
