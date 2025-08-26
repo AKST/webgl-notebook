@@ -35,3 +35,16 @@ export function setTriangle(gl, a, b, c) {
      ...b.vec,
      ...c.vec]), gl.STATIC_DRAW);
 }
+
+/**
+ * @param {WebGLRenderingContext} gl
+ * @param {VectorOf<'r', 4>} a
+ * @param {VectorOf<'r', 4>} b
+ * @param {VectorOf<'r', 4>} c
+ */
+export function setTriangle4V(gl, a, b, c) {
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+     ...a.vec,
+     ...b.vec,
+     ...c.vec]), gl.STATIC_DRAW);
+}
