@@ -31,7 +31,7 @@ class MatrixUtil {
     return m(3, 3)(
       [2 / w, 0, 0],
       [0, -2 / h, 0],
-      [-1, 1, 1],
+      [0, 0, 1],
     );
   }
 
@@ -88,24 +88,32 @@ class MatrixUtil {
 
 /**
  * @param {{
- *   setXTranslate: (v: number) => void,
- *   setYTranslate: (v: number) => void,
- *   setXScale: (v: number) => void,
- *   setYScale: (v: number) => void,
+ *   scale: {
+ *     update: (v: [number, number]) => void,
+ *     value: [number, number],
+ *   },
+ *   translate: {
+ *     update: (v: [number, number]) => void,
+ *     value: [number, number],
+ *   },
  *   setRotation: (v: number) => void,
  * }} options
  */
 function installController({
-  setXTranslate,
-  setYTranslate,
+  scale,
+  translate,
   setRotation,
-  setXScale,
-  setYScale,
 }) {
+  /** @param {string} id */
+  function getInput(id) {
+    const input = /** @type {HTMLInputElement | null} */ (document.getElementById(id));
+    if (input == null) throw new Error(id + ' not found');
+    return input;
+  }
+
   /** @param {string} id @param {(v: number) => void} cb */
   function onUpdate(id, cb) {
-    const e = /** @type {HTMLInputElement | null} */ (document.getElementById(id));
-    if (e == null) throw new Error(id + ' not found');
+    const e = getInput(id);
 
     let mousedown = false;
 
@@ -115,11 +123,29 @@ function installController({
     e.addEventListener('mousemove', () => mousedown && cb(parseFloat(e.value)));
 
   }
-  onUpdate('ctrl-translate-x', setXTranslate)
-  onUpdate('ctrl-translate-y', setYTranslate)
+  const txEl = getInput('ctrl-translate-x');
+  const tyEl = getInput('ctrl-translate-y');
+  txEl.value = translate.value[0]+'';
+  tyEl.value = translate.value[1]+'';
+
+  const updateT = () => translate.update([
+    parseFloat(txEl.value),
+    parseFloat(tyEl.value)
+  ])
+
+  const sxEl = getInput('ctrl-scale-x');
+  const syEl = getInput('ctrl-scale-y');
+
+  const updateS = () => scale.update([
+    parseFloat(sxEl.value),
+    parseFloat(syEl.value)
+  ])
+
+  onUpdate('ctrl-translate-x', updateT)
+  onUpdate('ctrl-translate-y', updateT)
   onUpdate('ctrl-rotation', setRotation)
-  onUpdate('ctrl-scale-x', setXScale)
-  onUpdate('ctrl-scale-y', setYScale)
+  onUpdate('ctrl-scale-x', updateS)
+  onUpdate('ctrl-scale-y', updateS)
 }
 
 export function main () {
@@ -166,17 +192,21 @@ export function main () {
   let rotation = 0;
 
   /** @type {[number, number]} */
-  const translate = [1, -1];
+  let translate = [0, 0];
 
   /** @type {[number, number]} */
-  const scale = [1, 1];
+  let scale = [1, 1];
 
   installController({
-    setXTranslate: x => { translate[0] = x },
-    setYTranslate: y => { translate[1] = -y },
+    translate: {
+      value: translate,
+      update: update => translate = update,
+    },
+    scale: {
+      value: scale,
+      update: update => scale = update,
+    },
     setRotation: r => { rotation = r },
-    setXScale: x => { scale[0] = x },
-    setYScale: y => { scale[1] = y },
   });
 
   requestAnimationFrame(function f () {
