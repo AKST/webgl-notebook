@@ -272,3 +272,89 @@ export function setLetterF3d(gl, x, y, z, width, height, depth, thickness) {
       buffer,
       gl.STATIC_DRAW);
 }
+
+/**
+ * @param {WebGLRenderingContext} gl
+ * @param {number} front
+ * @param {number} side
+ * @param {number} above
+ * @param {number} under
+ */
+export function setLetterMatColors(gl, front, side, above, under) {
+  const fr = (front & 0xff0000) >> 16;
+  const fg = (front & 0x00ff00) >> 8;
+  const fb = (front & 0x0000ff);
+  /** @type {number[]} */
+  const frontColor = [
+    [fr, fg, fb],
+    [fr, fg, fb],
+    [fr, fg, fb],
+    [fr, fg, fb],
+    [fr, fg, fb],
+    [fr, fg, fb],
+  ].flat();
+
+  const sr = (side & 0xff0000) >> 16;
+  const sg = (side & 0x00ff00) >> 8;
+  const sb = (side & 0x0000ff);
+  /** @type {number[]} */
+  const sideColor = [
+    [sr, sg, sb],
+    [sr, sg, sb],
+    [sr, sg, sb],
+    [sr, sg, sb],
+    [sr, sg, sb],
+    [sr, sg, sb],
+  ].flat();
+
+  const ar = (above & 0xff0000) >> 16;
+  const ag = (above & 0x00ff00) >> 8;
+  const ab = (above & 0x0000ff);
+  /** @type {number[]} */
+  const aboveColor = [
+    [ar, ag, ab],
+    [ar, ag, ab],
+    [ar, ag, ab],
+    [ar, ag, ab],
+    [ar, ag, ab],
+    [ar, ag, ab],
+  ].flat();
+
+  const ur = under & 0xff0000 >> 16;
+  const ug = under & 0x00ff00 >> 8;
+  const ub = under & 0x0000ff;
+  /** @type {number[]} */
+  const underColor = [
+    [ur, ug, ub],
+    [ur, ug, ub],
+    [ur, ug, ub],
+    [ur, ug, ub],
+    [ur, ug, ub],
+    [ur, ug, ub],
+  ].flat();
+
+
+  const buffer = new Uint8Array([
+    ...frontColor,
+    ...frontColor,
+    ...frontColor,
+    ...frontColor,
+    ...frontColor,
+    ...frontColor,
+    ...aboveColor,
+    ...aboveColor,
+    ...aboveColor,
+    ...sideColor,
+    ...aboveColor,
+    ...sideColor,
+    ...underColor,
+    ...underColor,
+    ...underColor,
+    ...sideColor,
+  ]);
+
+  gl.bufferData(
+      gl.ARRAY_BUFFER,
+      buffer,
+      gl.STATIC_DRAW);
+}
