@@ -166,7 +166,7 @@ export class Matrix3d {
    * @param {number} depth
    * @returns {Mat<'r', 4, 4>}
    */
-  static transform(width, height, depth) {
+  static projection(width, height, depth) {
     return m(4, 4)(
       [2 / width, 0, 0, 0],
       [0, -2 / height, 0, 0],

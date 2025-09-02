@@ -87,3 +87,188 @@ export function setLetterF(gl, x, y, width, height, thickness) {
       ]),
       gl.STATIC_DRAW);
 }
+
+/**
+ * @param {WebGLRenderingContext} gl
+ * @param {number} x
+ * @param {number} y
+ * @param {number} z
+ * @param {number} width
+ * @param {number} height
+ * @param {number} depth
+ * @param {number} thickness
+ */
+export function setLetterF3d(gl, x, y, z, width, height, depth, thickness) {
+  /** @param {[number, number][]} a @param {number[]} b @returns {number[]} */
+  const join2t1t = (a, b) => a.map((v, i) => [...v, b[i]]).flat();
+
+  const x30 = x + thickness;
+  const x67 = (x + width * 2 / 3) | 0;
+  const x100 = x + width;
+
+  const y30 = y + thickness;
+  const y60 = (y + thickness * 2) | 0;
+  const y90 = (y + thickness * 3) | 0;
+  const y150 = y + height;
+
+  /** @type {[number, number][]} */
+  const leftColumn = [
+    [x, y],
+    [x30, y],
+    [x, y150],
+    [x, y150],
+    [x30, y],
+    [x30, y150],
+  ];
+
+  /** @type {[number, number][]} */
+  const leftSide = [
+    [x, y],
+    [x, y],
+    [x, y150],
+    [x, y],
+    [x, y150],
+    [x, y150],
+  ];
+
+  /** @type {[number, number][]} */
+  const rightBottom = [
+    [x30, y90],
+    [x30, y90],
+    [x30, y150],
+    [x30, y90],
+    [x30, y150],
+    [x30, y150],
+  ];
+
+  /** @type {[number, number][]} */
+  const rightMiddleRung = [
+    [x67,   y60],
+    [x67,   y60],
+    [x67,   y90],
+    [x67,   y60],
+    [x67,   y90],
+    [x67,   y90],
+  ];
+
+
+  /** @type {[number, number][]} */
+  const bottom = [
+    [x, y150],
+    [x, y150],
+    [x30, y150],
+    [x, y150],
+    [x30, y150],
+    [x30, y150],
+  ];
+
+  /** @type {[number, number][]} */
+  const bottomMiddleRung = [
+    [x30, y90],
+    [x30, y90],
+    [x67, y90],
+    [x30, y90],
+    [x67, y90],
+    [x67, y90],
+  ]
+
+  /** @type {[number, number][]} */
+  const topRung = [
+    [x30, y],
+    [x100, y],
+    [x30, y30],
+    [x30, y30],
+    [x100, y],
+    [x100, y30],
+  ];
+
+  /** @type {[number, number][]} */
+  const topRungRight = [
+    [x100, y],
+    [x100, y30],
+    [x100, y30],
+    [x100, y],
+    [x100, y30],
+    [x100, y],
+  ];
+
+  /** @type {[number, number][]} */
+  const topRungUnder = [
+    [x30, y30],
+    [x30, y30],
+    [x100, y30],
+    [x30, y30],
+    [x100, y30],
+    [x100, y30],
+  ];
+
+  /** @type {[number, number][]} */
+  const topMiddleRung = [
+    [x30, y60],
+    [x30, y60],
+    [x67, y60],
+    [x30, y60],
+    [x67, y60],
+    [x67, y60],
+  ]
+
+  /** @type {[number, number][]} */
+  const middleRung = [
+    [x30, y60],
+    [x67, y60],
+    [x30, y90],
+    [x30, y90],
+    [x67, y60],
+    [x67, y90],
+  ];
+
+  /** @type {[number, number][]} */
+  const betweenTopMiddleRung = [
+    [x30, y30],
+    [x30, y30],
+    [x30, y60],
+    [x30, y30],
+    [x30, y60],
+    [x30, y60],
+  ];
+
+  /** @type {[number, number][]} */
+  const top = [
+    [x, y],
+    [x100, y],
+    [x100, y],
+    [x, y],
+    [x100, y],
+    [x, y],
+  ];
+
+  const la = [z, z, z + depth, z, z + depth, z + depth];
+  const lb = [z, z + depth, z + depth, z, z + depth, z];
+
+  const buffer = new Float32Array([
+    ...leftColumn.flatMap(t => [...t, z]),
+    ...topRung.flatMap(t => [...t, z]),
+    ...middleRung.flatMap(t => [...t, z]),
+    ...leftColumn.flatMap(t => [...t, z + depth]),
+    ...topRung.flatMap(t => [...t, z + depth]),
+    ...middleRung.flatMap(t => [...t, z + depth]),
+    ...join2t1t(top, la),
+    ...join2t1t(topRungRight, la),
+    ...join2t1t(topRungUnder, lb),
+    ...join2t1t(betweenTopMiddleRung, lb),
+    ...join2t1t(topMiddleRung, lb),
+    ...join2t1t(rightMiddleRung, lb),
+    ...join2t1t(bottomMiddleRung, lb),
+    ...join2t1t(rightBottom, lb),
+    ...join2t1t(bottom, lb),
+    ...join2t1t(leftSide, lb),
+  ]);
+
+  console.log(buffer);
+  console.log(buffer.length, 16 * 6);
+
+  gl.bufferData(
+      gl.ARRAY_BUFFER,
+      buffer,
+      gl.STATIC_DRAW);
+}

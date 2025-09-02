@@ -1,0 +1,525 @@
+/**
+ *
+ * @typedef {{
+ *   bounds: [number, number],
+ * }} Screen
+ *
+ * @typedef {[number, number, number]} A3
+ * @typedef {{ translate: A3, rotation: A3 }} Player
+ * @typedef {{ translate: A3, scale: A3, rotation: A3 }} Entity
+ *
+ * @typedef {(
+ *  | { kind: 'resize' }
+ * )} ExternalEvent
+ *
+ * @typedef {{
+ *   player: Player;
+ *   screen: Screen;
+ *   entity: Entity;
+ *   events: ExternalEvent[],
+ * }} State
+ *
+ * @typedef {{
+ *   player: {
+ *     translate: number,
+ *     rotation: number,
+ *   },
+ *   entity: {
+ *     translate: number,
+ *     rotation: number,
+ *     scale: number,
+ *   },
+ * }} Deltas
+ *
+ * @typedef {(
+ *  | { kind: 'set-active-keys', keys: string[] }
+ *  | { kind: 'init-stats' }
+ *  | { kind: 'update-entity-translate' }
+ *  | { kind: 'update-entity-rotation' }
+ *  | { kind: 'update-entity-scale' }
+ *  | { kind: 'delta', index: 0 | 1 | 2, dir: 1 | -1, t: number, array: A3, delta: number }
+ * )} InternalEffect
+ *
+ * @typedef {(
+ *   | 'a' | 'd' | 'w' | 's' | 'q' | 'e'
+ *   | '1' | '!' | '2' | '@' | '3' | '#'
+ *   | 'j' | 'l' | 'i' | 'k' | 'u' | 'o'
+ *   | '7' | '&' | '8' | '*' | '9' | '('
+ *   | 'n' | 'm' | ','
+ *   | 'N' | 'M' | '<'
+ * )} PlayerInput
+ *
+ * @typedef {Record<PlayerInput, number | undefined>} KeyboardState
+ */
+
+class Unreachable extends Error {
+  /** @param {never} value */
+  constructor(value) {
+    super(JSON.stringify(value, null, 2));
+  }
+}
+
+/**
+ * @param {KeyboardState} keyboard
+ * @returns {string[]}
+ */
+function activeKeys(keyboard) {
+  return Object.keys(keyboard).filter(k => keyboard[/** @type {keyof keyboard} */ (k)] != null);
+}
+
+/**
+ * @param {string} key
+ * @returns {[PlayerInput | undefined, PlayerInput | undefined]}
+ */
+function getKeyAsInput(key) {
+  /** @type {PlayerInput | undefined} */
+  let press = undefined;
+
+  /** @type {PlayerInput | undefined} */
+  let unpress = undefined;
+
+  switch (key) {
+    case 'A':
+    case 'a':
+      press = 'a';
+      break;
+
+    case 'W':
+    case 'w':
+      press = 'w';
+      break;
+
+    case 'S':
+    case 's':
+      press = 's';
+      break;
+
+    case 'D':
+    case 'd':
+      press = 'd';
+      break;
+
+    case 'Q':
+    case 'q':
+      press = 'q';
+      break;
+
+    case 'e':
+    case 'E':
+      press = 'e';
+      break;
+
+    case 'J':
+    case 'j':
+      press = 'j';
+      break;
+
+    case 'I':
+    case 'i':
+      press = 'i';
+      break;
+
+    case 'K':
+    case 'k':
+      press = 'k';
+      break;
+
+    case 'L':
+    case 'l':
+      press = 'l';
+      break;
+
+    case 'U':
+    case 'u':
+      press = 'u';
+      break;
+
+    case 'O':
+    case 'o':
+      press = 'o';
+      break;
+
+    case '1':
+      [press, unpress] = ['1', '!'];
+      break;
+
+    case '!':
+      [press, unpress] = ['!', '1'];
+      break;
+
+    case '2':
+      [press, unpress] = ['2', '@'];
+      break;
+
+    case '@':
+      [press, unpress] = ['@', '2'];
+      break;
+
+    case '3':
+      [press, unpress] = ['3', '#'];
+      break;
+
+    case '#':
+      [press, unpress] = ['#', '3'];
+      break;
+
+    case '7':
+      [press, unpress] = ['7', '&'];
+      break;
+
+    case '&':
+      [press, unpress] = ['&', '7'];
+      break;
+
+    case '8':
+      [press, unpress] = ['8', '*'];
+      break;
+
+    case '*':
+      [press, unpress] = ['*', '8'];
+      break;
+
+    case '9':
+      [press, unpress] = ['9', '('];
+      break;
+
+    case '(':
+      [press, unpress] = ['(', '9'];
+      break;
+
+    case 'n':
+      [press, unpress] = ['n', 'N'];
+      break;
+
+    case 'N':
+      [press, unpress] = ['N', 'n'];
+      break;
+
+    case 'm':
+      [press, unpress] = ['m', 'M'];
+      break;
+
+    case 'M':
+      [press, unpress] = ['M', 'm'];
+      break;
+
+    case ',':
+      [press, unpress] = [',', '<'];
+      break;
+
+    case '<':
+      [press, unpress] = ['<', ','];
+      break;
+
+    default:
+      break;
+  }
+
+  return [press, unpress];
+}
+
+/**
+ * @param {KeyboardState} keyboard
+ * @returns {[PlayerInput[], PlayerInput[]]}
+ */
+function getShiftAsInput(keyboard) {
+  /** @type {PlayerInput[]} */
+  const pressed = [];
+
+  /** @type {PlayerInput[]} */
+  const unpressed = [];
+
+  for (const [k, v] of Object.entries(keyboard)) {
+    if (v == null) continue;
+    const [a, b] = getKeyAsInput(k);
+
+    if (a == null || b == null) continue;
+    pressed.push(b);
+    unpressed.push(a);
+  }
+
+  return [pressed, unpressed];
+}
+
+/**
+ * @param {KeyboardState} keys
+ * @param {State} state
+ * @param {Deltas} d
+ * @param {number} start
+ * @returns {Generator<InternalEffect>}
+ */
+function * stateEffects(
+  keys,
+  { entity: es },
+  { entity: ed },
+  start,
+) {
+  /**
+   * @param {A3} array
+   * @param {number} delta
+   * @param {0 | 1 | 2} index
+   * @param {1 | -1} dir
+   * @param {keyof keys} key
+   * @returns {InternalEffect}
+   */
+  const diff = (array, delta, index, dir, key) => {
+    const t = /** @type {number} */ (keys[key]);
+    keys[key] = start;
+    return { kind: 'delta', array, delta, index, dir, t };
+  }
+
+  if (keys['l']) yield diff(es.translate, ed.translate, 0, 1, 'l');
+  if (keys['j']) yield diff(es.translate, ed.translate, 0, -1, 'j');
+  if (keys['u']) yield diff(es.translate, ed.translate, 1, -1, 'u');
+  if (keys['o']) yield diff(es.translate, ed.translate, 1, 1, 'o');
+  if (keys['i']) yield diff(es.translate, ed.translate, 2, 1, 'i');
+  if (keys['k']) yield diff(es.translate, ed.translate, 2, -1, 'k');
+
+  if (keys['7']) yield diff(es.rotation, ed.rotation, 0, 1, '7');
+  if (keys['&']) yield diff(es.rotation, ed.rotation, 0, -1, '&');
+  if (keys['8']) yield diff(es.rotation, ed.rotation, 1, 1, '8');
+  if (keys['*']) yield diff(es.rotation, ed.rotation, 1, -1, '*');
+  if (keys['9']) yield diff(es.rotation, ed.rotation, 2, 1, '9');
+  if (keys['(']) yield diff(es.rotation, ed.rotation, 2, -1, '(');
+
+  if (keys['n']) yield diff(es.scale, ed.scale, 0, 1, 'n');
+  if (keys['N']) yield diff(es.scale, ed.scale, 0, -1, 'N');
+  if (keys['m']) yield diff(es.scale, ed.scale, 1, 1, 'm');
+  if (keys['M']) yield diff(es.scale, ed.scale, 1, -1, 'M');
+  if (keys[',']) yield diff(es.scale, ed.scale, 2, 1, ',');
+  if (keys['<']) yield diff(es.scale, ed.scale, 2, -1, '<');
+
+  if (keys['j'] || keys['k'] || keys['l'] || keys['i']) {
+    yield { kind: 'update-entity-translate' };
+  }
+
+  if (keys['7'] || keys['&'] || keys['8'] || keys['*'] || keys['9'] || keys['(']) {
+    yield { kind: 'update-entity-rotation' };
+  }
+
+  if (keys['n'] || keys['N'] || keys['m'] || keys['M'] || keys[','] || keys['<']) {
+    yield { kind: 'update-entity-scale' };
+  }
+}
+
+/**
+ * @param {{
+ *   window: Pick<Window, 'innerWidth' | 'innerHeight' | 'addEventListener'>,
+ *   player?: Partial<Player>,
+ *   playerDelta?: { translate?: number, rotation?: number },
+ *   entity?: Partial<Entity>,
+ *   entityDelta?: { scale?: number, translate?: number, rotation?: number },
+ * }} cfg
+ * @returns {State}
+ */
+export function initControls({
+  window,
+  player: playerInit={},
+  playerDelta = {},
+  entity: entityInit={},
+  entityDelta = {},
+}) {
+  /** @type {[number, number]} */
+  const bounds = [window.innerWidth, window.innerHeight];
+
+  /** @type {Deltas} */
+  const deltas = {
+    player: {
+      translate: playerDelta.translate ?? 1,
+      rotation: playerDelta.rotation ??  0.5,
+    },
+    entity: {
+      translate: entityDelta.translate ?? 1,
+      rotation: entityDelta.rotation ??  0.5,
+      scale: entityDelta.scale ??  0.5,
+    },
+  };
+
+  /** @type {[number, number, number]} */
+  const pTranslate = playerInit.translate ?? [0, 0, 0];
+
+  /** @type {[number, number, number]} */
+  const pRotation = playerInit.rotation ?? [0, 0, 0];
+
+  /** @type {[number, number, number]} */
+  const eTranslate = entityInit.translate ?? [0, 0, 0];
+
+  /** @type {[number, number, number]} */
+  const eScale = entityInit.scale ?? [1, 1, 1];
+
+  /** @type {[number, number, number]} */
+  const eRotation = entityInit.rotation ?? [0, 0, 0];
+
+  /** @type {ExternalEvent[]} */
+  const exEvents = [];
+
+  /** @type {InternalEffect[]} */
+  const events = [];
+
+  const domLeafs = {
+    entity: {
+      translate: document.createElement('span'),
+      rotation: document.createElement('span'),
+      scale: document.createElement('span'),
+    },
+    activeKeys: document.createElement('span'),
+  };
+
+  /** @type {State} */
+  const state = {
+    events: exEvents,
+    screen: { bounds },
+    player: { translate: pTranslate, rotation: pRotation },
+    entity: {
+      translate: eTranslate,
+      scale: eScale,
+      rotation: eRotation,
+    },
+  };
+
+  /**
+   * @param {InternalEffect} effect
+   * @param {number} t
+   */
+  function internalEffect(effect, t) {
+    switch (effect.kind) {
+      case 'set-active-keys':
+        domLeafs.activeKeys.innerText = effect.keys.join(', ');
+        break;
+
+      case 'init-stats':
+        internalEffect({ kind: 'update-entity-translate' }, t);
+        internalEffect({ kind: 'update-entity-rotation' }, t);
+        internalEffect({ kind: 'update-entity-scale' }, t);
+        break;
+
+      case 'update-entity-translate':
+        domLeafs.entity.translate.innerText = `[${eTranslate.map(e => e.toFixed(2)).join(', ')}]`;
+        break;
+
+      case 'update-entity-rotation':
+        domLeafs.entity.rotation.innerText = `[${eRotation.map(e => e.toFixed(2)).join(', ')}]`;
+        break;
+
+      case 'update-entity-scale':
+        domLeafs.entity.scale.innerText = `[${eScale.map(e => e.toFixed(2)).join(', ')}]`;
+        break;
+
+      case 'delta':
+        effect.array[effect.index] += effect.dir * effect.delta * ((t - effect.t) / 1000);
+        break;
+
+      default:
+        throw new Unreachable(effect);
+    }
+  }
+
+  /** @type {KeyboardState} */
+  const keys = {
+    w: undefined,
+    a: undefined,
+    s: undefined,
+    d: undefined,
+    1: undefined,
+    2: undefined,
+    3: undefined,
+    '!': undefined,
+    '@': undefined,
+    '#': undefined,
+
+    j: undefined,
+    i: undefined,
+    k: undefined,
+    l: undefined,
+    7: undefined,
+    8: undefined,
+    9: undefined,
+    '&': undefined,
+    '*': undefined,
+    '(': undefined,
+    n: undefined,
+    m: undefined,
+    ',': undefined,
+    N: undefined,
+    M: undefined,
+    '<': undefined,
+  };
+
+  requestAnimationFrame(function f(t) {
+    try {
+      while (true) {
+        const next = events.pop();
+        if (next == null) break;
+        internalEffect(next, t);
+      }
+
+      for (const eff of stateEffects(keys, state, deltas, t)) {
+        internalEffect(eff, t);
+      }
+
+      requestAnimationFrame(f);
+    } catch (e) {
+      console.error(e);
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    bounds[0] = window.innerWidth;
+    bounds[1] = window.innerHeight;
+    exEvents.push({ kind: 'resize' });
+  });
+
+  /** @param {KeyboardEvent} event */
+  window.addEventListener('keydown', event => {
+    if (event.key === 'Shift') {
+      const [press, unpress] = getShiftAsInput(keys);
+      for (const k of press) keys[k] = performance.now();
+      for (const k of unpress) keys[k] = undefined;
+    } else {
+      const [press, unpress] = getKeyAsInput(event.key);
+      if (press) keys[press] = performance.now();
+      if (unpress) keys[unpress] = undefined;
+    }
+    events.push({ kind: 'set-active-keys', keys: activeKeys(keys) });
+  });
+
+  /** @param {KeyboardEvent} event */
+  window.addEventListener('keyup', event => {
+    if (event.key === 'Shift') {
+      const [press, unpress] = getShiftAsInput(keys);
+      for (const k of press) keys[k] = performance.now();
+      for (const k of unpress) keys[k] = undefined;
+    } else {
+      const [press] = getKeyAsInput(event.key);
+      if (press) keys[press] = undefined;
+    }
+    events.push({ kind: 'set-active-keys', keys: activeKeys(keys) });
+  });
+
+  /** @param {string} label */
+  const createLabel = label => {
+    const text = document.createTextNode(label);
+    const node = document.createElement('span');
+    node.appendChild(text);
+    return node;
+  }
+
+  const statsEl = document.getElementById('stats-tranform-state');
+  if (statsEl) {
+    statsEl.appendChild(createLabel('Entity Translate'));
+    statsEl.appendChild(domLeafs.entity.translate);
+
+    statsEl.appendChild(createLabel('Entity Rotation'));
+    statsEl.appendChild(domLeafs.entity.rotation);
+
+    statsEl.appendChild(createLabel('Entity Scale'));
+    statsEl.appendChild(domLeafs.entity.scale);
+
+    statsEl.appendChild(createLabel('Active Keys'));
+    statsEl.appendChild(domLeafs.activeKeys);
+  }
+
+  internalEffect({ kind: 'init-stats' }, performance.now());
+
+  return state;
+}
