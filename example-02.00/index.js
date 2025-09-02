@@ -2,6 +2,7 @@
  * @import { VectorOf as Vec } from '../math/type.ts';
  */
 import { vector as v, matrix as m } from '../math/value.js';
+import { install2DControls } from '../common/2d/controls.js';
 import { setTriangle } from '../common/buffer.js';
 import { createShader, createProgram } from '../common/init.js';
 
@@ -86,68 +87,6 @@ class MatrixUtil {
   }
 }
 
-/**
- * @param {{
- *   scale: {
- *     update: (v: [number, number]) => void,
- *     value: [number, number],
- *   },
- *   translate: {
- *     update: (v: [number, number]) => void,
- *     value: [number, number],
- *   },
- *   setRotation: (v: number) => void,
- * }} options
- */
-function installController({
-  scale,
-  translate,
-  setRotation,
-}) {
-  /** @param {string} id */
-  function getInput(id) {
-    const input = /** @type {HTMLInputElement | null} */ (document.getElementById(id));
-    if (input == null) throw new Error(id + ' not found');
-    return input;
-  }
-
-  /** @param {string} id @param {(v: number) => void} cb */
-  function onUpdate(id, cb) {
-    const e = getInput(id);
-
-    let mousedown = false;
-
-    e.addEventListener('change', () => cb(parseFloat(e.value)));
-    e.addEventListener('mousedown', () => mousedown = true);
-    e.addEventListener('mouseup', () => mousedown = false);
-    e.addEventListener('mousemove', () => mousedown && cb(parseFloat(e.value)));
-
-  }
-  const txEl = getInput('ctrl-translate-x');
-  const tyEl = getInput('ctrl-translate-y');
-  txEl.value = translate.value[0]+'';
-  tyEl.value = translate.value[1]+'';
-
-  const updateT = () => translate.update([
-    parseFloat(txEl.value),
-    parseFloat(tyEl.value)
-  ])
-
-  const sxEl = getInput('ctrl-scale-x');
-  const syEl = getInput('ctrl-scale-y');
-
-  const updateS = () => scale.update([
-    parseFloat(sxEl.value),
-    parseFloat(syEl.value)
-  ])
-
-  onUpdate('ctrl-translate-x', updateT)
-  onUpdate('ctrl-translate-y', updateT)
-  onUpdate('ctrl-rotation', setRotation)
-  onUpdate('ctrl-scale-x', updateS)
-  onUpdate('ctrl-scale-y', updateS)
-}
-
 export function main () {
   const container = document.getElementById('container');
   if (container == null) throw new Error('container');
@@ -189,24 +128,41 @@ export function main () {
   const c = v(2)(-175,  100);
   setTriangle(gl, a, b, c);
 
-  let rotation = 0;
+  const state = {
+    rotation: 0,
+    /** @type {[number, number]} */
+    translate: [0, 0],
+    /** @type {[number, number]} */
+    scale: [1, 1],
+  };
 
-  /** @type {[number, number]} */
-  let translate = [0, 0];
-
-  /** @type {[number, number]} */
-  let scale = [1, 1];
-
-  installController({
+  install2DControls({
     translate: {
-      value: translate,
-      update: update => translate = update,
+      value: state.translate,
+      range: [[-1, 1], [-1, 1]],
+      delta: [1, 1],
+      set: update => { state.translate = update; },
+      update: update => {
+        state.translate[0] += update[0];
+        state.translate[1] += update[1];
+      },
     },
     scale: {
-      value: scale,
-      update: update => scale = update,
+      value: state.scale,
+      delta: [1, 1],
+      set: update => { state.scale = update; },
+      update: update => {
+        state.scale[0] += update[0];
+        state.scale[1] += update[1];
+      },
     },
-    setRotation: r => { rotation = r },
+    rotation: {
+      delta: 2,
+      update: update => {
+       state.rotation += update;
+      },
+      set: r => { state.rotation = r },
+    },
   });
 
   requestAnimationFrame(function f () {
@@ -214,9 +170,9 @@ export function main () {
 
     gl.uniformMatrix3fv(matUnifLocation, false, MatrixUtil.transform({
       bounds: [gl.canvas.width, gl.canvas.height],
-      translate,
-      rotation,
-      scale,
+      translate: state.translate,
+      rotation: state.rotation,
+      scale: state.scale,
     }));
 
     requestAnimationFrame(f);

@@ -1,0 +1,45 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-black: #1a1a1a;
+  --bg-msgrey: #c6c6c6;
+  --bg-greygreen: rgb(112, 121, 110);
+  --border-inset-grey: 3px inset #c6c6c6;
+  --border-outset-grey: 3px outset #c6c6c6;
+}
+
+html, body {
+  background: white;
+}
+
+body { margin: 0 }
+
+canvas {
+  display: block;
+  background: blue;
+  height: 100dvh;
+  width: 100dvw;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+#controls {
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0 8px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+fieldset {
+  display: grid;
+  grid-gap: 16px;
+  grid-template-columns: auto 1fr;
+  grid-auto-flow: row;
+
+  legend {
+    grid-column: span 2;
+  }
+}
