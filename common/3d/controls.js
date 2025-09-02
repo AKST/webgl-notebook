@@ -59,6 +59,37 @@ class Unreachable extends Error {
   }
 }
 
+
+/**
+ * @param {string} id
+ * @param {string} labelText
+ * @param {number} min
+ * @param {number} max
+ * @param {number} value
+ * @param {(v: number) => void} onChange
+ * @returns {{ label: HTMLLabelElement, input: HTMLInputElement }}
+ */
+const createInput = (id, labelText, min, max, value, onChange) => {
+  const label = document.createElement('label');
+  label.htmlFor = id
+  label.innerText = labelText;
+  const input = document.createElement('input');
+  input.id = id;
+  input.type = 'range';
+  input.min = '' + min;
+  input.max = '' + max;
+  input.value = '' +value;
+  input.step = 'any';
+
+  let mousedown = false;
+  input.addEventListener('change', () => onChange(parseFloat(input.value)));
+  input.addEventListener('mousedown', () => mousedown = true);
+  input.addEventListener('mouseup', () => mousedown = false);
+  input.addEventListener('mousemove', () => mousedown && onChange(parseFloat(input.value)));
+
+  return { label, input };
+}
+
 /**
  * @param {KeyboardState} keyboard
  * @returns {string[]}
@@ -420,6 +451,8 @@ export function initControls({
     a: undefined,
     s: undefined,
     d: undefined,
+    q: undefined,
+    e: undefined,
     1: undefined,
     2: undefined,
     3: undefined,
@@ -431,6 +464,8 @@ export function initControls({
     i: undefined,
     k: undefined,
     l: undefined,
+    u: undefined,
+    o: undefined,
     7: undefined,
     8: undefined,
     9: undefined,
@@ -496,16 +531,20 @@ export function initControls({
     events.push({ kind: 'set-active-keys', keys: activeKeys(keys) });
   });
 
-  /** @param {string} label */
-  const createLabel = label => {
+  /** @param {string} tagName @returns {(label: string, attrs?: Record<string, string>) => HTMLElement} */
+  const createLabelFactory = tagName => (label, attrs = {}) => {
     const text = document.createTextNode(label);
-    const node = document.createElement('span');
+    const node = document.createElement(tagName);
+    for (const [k, v] of Object.entries(attrs)) {
+      node.setAttribute(k, v);
+    }
     node.appendChild(text);
     return node;
   }
 
   const statsEl = document.getElementById('stats-tranform-state');
   if (statsEl) {
+    const createLabel = createLabelFactory('span');
     statsEl.appendChild(createLabel('Entity Translate'));
     statsEl.appendChild(domLeafs.entity.translate);
 
@@ -520,6 +559,34 @@ export function initControls({
   }
 
   internalEffect({ kind: 'init-stats' }, performance.now());
+
+  const ctrlEl = document.getElementById('form-controls');
+  if (ctrlEl) {
+    const etd = createInput(
+      'ctrl-entity-tr-d', 'E Translate Delta',
+      -10, 10, deltas.entity.translate,
+      v => deltas.entity.translate = v);
+
+    const erd = createInput(
+      'ctrl-entity-ro-d', 'E Rotate Delta',
+      -10, 10, deltas.entity.rotation,
+      v => deltas.entity.rotation = v);
+
+    const esd = createInput(
+      'ctrl-entity-sc-d', 'E Scale Delta',
+      -10, 10, deltas.entity.scale,
+      v => deltas.entity.scale = v);
+
+    ctrlEl.appendChild(etd.label);
+    ctrlEl.appendChild(etd.input);
+
+    ctrlEl.appendChild(erd.label);
+    ctrlEl.appendChild(erd.input);
+
+    ctrlEl.appendChild(esd.label);
+    ctrlEl.appendChild(esd.input);
+  }
+
 
   return state;
 }
