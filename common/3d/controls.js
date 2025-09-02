@@ -289,7 +289,7 @@ function * stateEffects(
   if (keys[',']) yield diff(es.scale, ed.scale, 2, 1, ',');
   if (keys['<']) yield diff(es.scale, ed.scale, 2, -1, '<');
 
-  if (keys['j'] || keys['k'] || keys['l'] || keys['i']) {
+  if (keys['j'] || keys['k'] || keys['l'] || keys['i'] || keys['u'] || keys['o']) {
     yield { kind: 'update-entity-translate' };
   }
 

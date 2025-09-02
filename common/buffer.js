@@ -99,173 +99,149 @@ export function setLetterF(gl, x, y, width, height, thickness) {
  * @param {number} thickness
  */
 export function setLetterF3d(gl, x, y, z, width, height, depth, thickness) {
-  /** @param {[number, number][]} a @param {number[]} b @returns {number[]} */
-  const join2t1t = (a, b) => a.map((v, i) => [...v, b[i]]).flat();
-
+  const x0 = x;
   const x30 = x + thickness;
   const x67 = (x + width * 2 / 3) | 0;
   const x100 = x + width;
 
+  const y0 = y;
   const y30 = y + thickness;
   const y60 = (y + thickness * 2) | 0;
   const y90 = (y + thickness * 3) | 0;
   const y150 = y + height;
 
-  /** @type {[number, number][]} */
-  const leftColumn = [
-    [x, y],
-    [x30, y],
-    [x, y150],
-    [x, y150],
-    [x30, y],
-    [x30, y150],
-  ];
-
-  /** @type {[number, number][]} */
-  const leftSide = [
-    [x, y],
-    [x, y],
-    [x, y150],
-    [x, y],
-    [x, y150],
-    [x, y150],
-  ];
-
-  /** @type {[number, number][]} */
-  const rightBottom = [
-    [x30, y90],
-    [x30, y90],
-    [x30, y150],
-    [x30, y90],
-    [x30, y150],
-    [x30, y150],
-  ];
-
-  /** @type {[number, number][]} */
-  const rightMiddleRung = [
-    [x67,   y60],
-    [x67,   y60],
-    [x67,   y90],
-    [x67,   y60],
-    [x67,   y90],
-    [x67,   y90],
-  ];
-
-
-  /** @type {[number, number][]} */
-  const bottom = [
-    [x, y150],
-    [x, y150],
-    [x30, y150],
-    [x, y150],
-    [x30, y150],
-    [x30, y150],
-  ];
-
-  /** @type {[number, number][]} */
-  const bottomMiddleRung = [
-    [x30, y90],
-    [x30, y90],
-    [x67, y90],
-    [x30, y90],
-    [x67, y90],
-    [x67, y90],
-  ]
-
-  /** @type {[number, number][]} */
-  const topRung = [
-    [x30, y],
-    [x100, y],
-    [x30, y30],
-    [x30, y30],
-    [x100, y],
-    [x100, y30],
-  ];
-
-  /** @type {[number, number][]} */
-  const topRungRight = [
-    [x100, y],
-    [x100, y30],
-    [x100, y30],
-    [x100, y],
-    [x100, y30],
-    [x100, y],
-  ];
-
-  /** @type {[number, number][]} */
-  const topRungUnder = [
-    [x30, y30],
-    [x30, y30],
-    [x100, y30],
-    [x30, y30],
-    [x100, y30],
-    [x100, y30],
-  ];
-
-  /** @type {[number, number][]} */
-  const topMiddleRung = [
-    [x30, y60],
-    [x30, y60],
-    [x67, y60],
-    [x30, y60],
-    [x67, y60],
-    [x67, y60],
-  ]
-
-  /** @type {[number, number][]} */
-  const middleRung = [
-    [x30, y60],
-    [x67, y60],
-    [x30, y90],
-    [x30, y90],
-    [x67, y60],
-    [x67, y90],
-  ];
-
-  /** @type {[number, number][]} */
-  const betweenTopMiddleRung = [
-    [x30, y30],
-    [x30, y30],
-    [x30, y60],
-    [x30, y30],
-    [x30, y60],
-    [x30, y60],
-  ];
-
-  /** @type {[number, number][]} */
-  const top = [
-    [x, y],
-    [x100, y],
-    [x100, y],
-    [x, y],
-    [x100, y],
-    [x, y],
-  ];
-
-  const la = [z, z, z + depth, z, z + depth, z + depth];
-  const lb = [z, z + depth, z + depth, z, z + depth, z];
+  const z0 = z;
+  const z30 = z + depth;
 
   const buffer = new Float32Array([
-    ...leftColumn.flatMap(t => [...t, z]),
-    ...topRung.flatMap(t => [...t, z]),
-    ...middleRung.flatMap(t => [...t, z]),
-    ...leftColumn.flatMap(t => [...t, z + depth]),
-    ...topRung.flatMap(t => [...t, z + depth]),
-    ...middleRung.flatMap(t => [...t, z + depth]),
-    ...join2t1t(top, la),
-    ...join2t1t(topRungRight, la),
-    ...join2t1t(topRungUnder, lb),
-    ...join2t1t(betweenTopMiddleRung, lb),
-    ...join2t1t(topMiddleRung, lb),
-    ...join2t1t(rightMiddleRung, lb),
-    ...join2t1t(bottomMiddleRung, lb),
-    ...join2t1t(rightBottom, lb),
-    ...join2t1t(bottom, lb),
-    ...join2t1t(leftSide, lb),
-  ]);
+    // left column front
+    x0, y0, z0,
+    x0, y150, z0,
+    x30, y0, z0,
+    x0, y150, z0,
+    x30, y150, z0,
+    x30, y0, z0,
 
-  console.log(buffer);
-  console.log(buffer.length, 16 * 6);
+    // top rung front
+    x30, y0, z0,
+    x30, y30, z0,
+    x100, y0, z0,
+    x30, y30, z0,
+    x100, y30, z0,
+    x100, y0, z0,
+
+    // middle rung front
+    x30, y60, z0,
+    x30, y90, z0,
+    x67, y60, z0,
+    x30, y90, z0,
+    x67, y90, z0,
+    x67, y60, z0,
+
+    // left column back
+    x0, y0, z30,
+    x30, y0, z30,
+    x0, y150, z30,
+    x0, y150, z30,
+    x30, y0, z30,
+    x30, y150, z30,
+
+    // top rung back
+    x30, y0, z30,
+    x100, y0, z30,
+    x30, y30, z30,
+    x30, y30, z30,
+    x100, y0, z30,
+    x100, y30, z30,
+
+    // middle rung back
+    x30, y60, z30,
+    x67, y60, z30,
+    x30, y90, z30,
+    x30, y90, z30,
+    x67, y60, z30,
+    x67, y90, z30,
+
+    // top
+    x0, y0, z0,
+    x100, y0, z0,
+    x100, y0, z30,
+    x0, y0, z0,
+    x100, y0, z30,
+    x0, y0, z30,
+
+    // top rung right
+    x100, y0, z0,
+    x100, y30, z0,
+    x100, y30, z30,
+    x100, y0, z0,
+    x100, y30, z30,
+    x100, y0, z30,
+
+    // under top rung
+    x30, y30, z0,
+    x30, y30, z30,
+    x100, y30, z30,
+    x30, y30, z0,
+    x100, y30, z30,
+    x100, y30, z0,
+
+    // between top rung and middle
+    x30, y30, z0,
+    x30, y60, z30,
+    x30, y30, z30,
+    x30, y30, z0,
+    x30, y60, z0,
+    x30, y60, z30,
+
+    // top middle rung
+    x30, y60, z0,
+    x67, y60, z30,
+    x30, y60, z30,
+    x30, y60, z0,
+    x67, y60, z0,
+    x67, y60, z30,
+
+    // right of middle rung
+    x67, y60, z0,
+    x67, y90, z30,
+    x67, y60, z30,
+    x67, y60, z0,
+    x67, y90, z0,
+    x67, y90, z30,
+
+    // bottom of middle rung
+    x30, y90, z0,
+    x30, y90, z30,
+    x67, y90, z30,
+    x30, y90, z0,
+    x67, y90, z30,
+    x67, y90, z0,
+
+    // right of bottom
+    x30, y90, z0,
+    x30, y150, z30,
+    x30, y90, z30,
+    x30, y90, z0,
+    x30, y150, z0,
+    x30, y150, z30,
+
+    // bottom
+    x0, y150, z0,
+    x0, y150, z30,
+    x30, y150, z30,
+    x0, y150, z0,
+    x30, y150, z30,
+    x30, y150, z0,
+
+    // left side
+    x0, y0, z0,
+    x0, y0, z30,
+    x0, y150, z30,
+    x0, y0, z0,
+    x0, y150, z30,
+    x0, y150, z0,
+  ]);
 
   gl.bufferData(
       gl.ARRAY_BUFFER,
@@ -335,20 +311,34 @@ export function setLetterMatColors(gl, front, side, above, under) {
 
 
   const buffer = new Uint8Array([
+    // left column front
     ...frontColor,
+    // top rung front
     ...frontColor,
+    // middle rung front
     ...frontColor,
+    // left column back
     ...frontColor,
+    // top rung back
     ...frontColor,
+    // middle rung back
     ...frontColor,
+    // top
     ...aboveColor,
-    ...aboveColor,
-    ...aboveColor,
+    // top rung right
     ...sideColor,
-    ...aboveColor,
+    // under top rung
+    ...underColor,
+    // between top rung and middle
     ...sideColor,
+    // top middle rung
+    ...aboveColor,
+    // right of middle rung
+    ...sideColor,
+    // bottom of middle rung
     ...underColor,
-    ...underColor,
+    // right of bottom
+    ...sideColor,
     ...underColor,
     ...sideColor,
   ]);
