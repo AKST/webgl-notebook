@@ -4,17 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Web GL Exercise</title>
-  <link rel="stylesheet" href="./style.css">
+  <style>
+    @import '../common/style/base.css';
+  </style>
 </head>
 <body>
-  <details id="controls">
+  <details id="controls" open>
     <summary>Controls</summary>
     <nav>
       <a href="..">Home</a>
-      <a href="https://webglfundamentals.org/webgl/lessons/webgl-3d-orthographic.html">Tutorial</a>
+      <a href="https://webglfundamentals.org/webgl/lessons/webgl-3d-perspective.html">Tutorial</a>
     </nav>
     <hr>
-    <p>Here we have a bunch of cascading F's</p>
+    <p>
+      Here I am experimenting with cameras. Apparently
+      we're expecting with "fudging" first. <b>Next</b>
+      We'll be incorporating the fudge into the matrix.
+      I've also updated the tranforms so they are in
+      relatation to the object not the origin.
+    </p>
     <ul>
       <li>JKLUIO — for translation</li>
       <li>789 for rotation (Shift for reverse)</li>

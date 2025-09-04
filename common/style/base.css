@@ -1,5 +1,6 @@
 * {
   box-sizing: border-box;
+  font-family: 'Apple SD Gothic Neo', monospace;
 }
 
 :root {
@@ -8,6 +9,21 @@
   --bg-greygreen: rgb(112, 121, 110);
   --border-inset-grey: 3px inset #c6c6c6;
   --border-outset-grey: 3px outset #c6c6c6;
+}
+
+details > summary,
+fieldset > legend {
+  font-weight: 800;
+}
+
+nav {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  padding-top: 16px;
+  justify-items: start;
+  align-content: center;
+  font-weight: 700;
 }
 
 html, body {
@@ -31,6 +47,13 @@ canvas {
   position: absolute;
   top: 0;
   left: 0;
+  &[open] {
+    width: 350px;
+  }
+}
+
+#controls, #stats {
+  padding: 8px;
 }
 
 fieldset {
@@ -46,11 +69,10 @@ fieldset {
 
 #stats {
   background: rgba(255, 255, 255, 0.8);
-  padding: 0 8px;
   position: absolute;
   top: 0;
   right: 0;
-  &, #stats-tranform-state {
+  &[open], #stats-tranform-state {
     display: grid;
     grid-gap: 16px;
     grid-template-columns: auto 1fr;

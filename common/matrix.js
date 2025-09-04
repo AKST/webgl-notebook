@@ -161,10 +161,24 @@ export class Matrix3d {
   }
 
   /**
+   * @param {number} fudge
+   * @returns {Mat<'r', 4, 4>}
+   */
+  static fudgeZ(fudge) {
+    return m(4, 4)(
+      [1, 0, 0, 0],
+      [0, 1, 0, 0],
+      [0, 0, 1, fudge],
+      [0, 0, 0, 1],
+    );
+  }
+
+  /**
    * @param {number} width
    * @param {number} height
    * @param {number} depth
    * @returns {Mat<'r', 4, 4>}
+   *
    */
   static projection(width, height, depth) {
     return m(4, 4)(
@@ -172,6 +186,46 @@ export class Matrix3d {
       [0, -2 / height, 0, 0],
       [0, 0, 2 / depth, 0],
       [-1, 1, 0, 1],
+    );
+  }
+
+  /**
+   * @param {number} left
+   * @param {number} right
+   * @param {number} bottom
+   * @param {number} top
+   * @param {number} near
+   * @param {number} far
+   * @returns {Mat<'r', 4, 4>}
+   */
+  static orthographic(left, right, bottom, top, near, far) {
+    return m(4, 4)(
+      [2 / (right - left), 0, 0, 0],
+      [0, 2 / (top - bottom), 0, 0],
+      [0, 0, 2 / (near - far), 0],
+      [
+        (left + right) / (left - right),
+        (bottom + top) / (bottom - top),
+        (near + far) / (near - far), 1,
+      ],
+    );
+  }
+
+  /**
+   * @param {number} fov
+   * @param {number} aspect
+   * @param {number} near
+   * @param {number} far
+   * @returns {Mat<'r', 4, 4>}
+   */
+  static perspective(fov, aspect, near, far) {
+    const f = Math.tan(Math.PI * 0.5 - 0.5 * fov);
+    const ri = 1.0 / (near - far);
+    return m(4, 4)(
+      [f / aspect, 0, 0, 0],
+      [0, f, 0, 0],
+      [0, 0, (near + far) * ri, -1],
+      [0, 0, near * far * ri * 2, 0],
     );
   }
 }

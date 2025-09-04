@@ -69,15 +69,15 @@ class Unreachable extends Error {
  * @param {(v: number) => void} onChange
  * @returns {{ label: HTMLLabelElement, input: HTMLInputElement }}
  */
-const createInput = (id, labelText, min, max, value, onChange) => {
+export const createInput = (id, labelText, min, max, value, onChange) => {
   const label = document.createElement('label');
   label.htmlFor = id
   label.innerText = labelText;
   const input = document.createElement('input');
   input.id = id;
   input.type = 'range';
-  input.min = '' + min;
   input.max = '' + max;
+  input.min = '' + min;
   input.value = '' +value;
   input.step = 'any';
 
@@ -564,7 +564,7 @@ export function initControls({
   if (ctrlEl) {
     const etd = createInput(
       'ctrl-entity-tr-d', 'E Translate Delta',
-      -10, 10, deltas.entity.translate,
+      -1000, 1000, deltas.entity.translate,
       v => deltas.entity.translate = v);
 
     const erd = createInput(
