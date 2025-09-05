@@ -1,5 +1,8 @@
 /**
- * @import { MatrixOf as Mat } from '../math/type.ts';
+ * @import {
+ *   MatrixOf as Mat,
+ *   VectorOf as Vec,
+ * } from '../math/type.ts';
  */
 import { matrix as m } from '../math/value.js';
 import * as math from '../math/value.js';
@@ -227,6 +230,31 @@ export class Matrix3d {
       [0, f, 0, 0],
       [0, 0, (near + far) * ri, -1],
       [0, 0, near * far * ri * 2, 0],
+    );
+  }
+
+  /**
+   * @param {Vec<'r', 3>} position
+   * @param {Vec<'r', 3>} target
+   * @param {Vec<'r', 3>} up
+   * @returns {Mat<'r', 4, 4>}
+   */
+  static lookat(position, target, up) {
+    const { el: { sub }, vector: { cross3d, unit } } = math;
+    const zax = unit(sub(position, target));
+    const xax = unit(cross3d(up, zax));
+    const yax = unit(cross3d(zax, xax));
+
+    const [xa, xb, xc] = xax.vec;
+    const [ya, yb, yc] = yax.vec;
+    const [za, zb, zc] = zax.vec;
+    const [pa, pb, pc] = position.vec;
+
+    return m(4, 4)(
+      [xa, xb, xc, 0],
+      [ya, yb, yc, 0],
+      [za, zb, zc, 0],
+      [pa, pb, pc, 1],
     );
   }
 }

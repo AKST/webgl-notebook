@@ -138,14 +138,14 @@ export function vector<N extends number | undefined>(
 >;
 
 export namespace vector {
-  export function zeros(length: number): Vector;
-  export function ones(length: number): Vector;
+  export function zeros<N extends number>(length: N): VectorOf<'r', N>;
+  export function ones<N extends number>(length: N): VectorOf<'r', N>;
   export function basis(length: number, index: number): Vector;
   export function size(v: Vector): number;
   export function norm(v: Vector): number;
-  export function unit(v: Vector): Vector;
+  export function unit<N extends number>(length: VectorOf<'r', N>): VectorOf<'r', N>;
   export function cross2d(a: Vector, b: Vector): number;
-  export function cross3d(a: Vector, b: Vector): Vector;
+  export function cross3d(a: VectorOf<'r', 3>, b: VectorOf<'r', 3>): VectorOf<'r', 3>;
   export function dot(a: Vector, b: Vector): number;
   export function set(v: Vector, i: number, a: number | Complex): Vector;
   export function get(v: Vector, i: number): number | Complex;
