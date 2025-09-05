@@ -34,6 +34,8 @@
  * @typedef {(
  *  | { kind: 'set-active-keys', keys: string[] }
  *  | { kind: 'init-stats' }
+ *  | { kind: 'update-player-translate' }
+ *  | { kind: 'update-player-rotation' }
  *  | { kind: 'update-entity-translate' }
  *  | { kind: 'update-entity-rotation' }
  *  | { kind: 'update-entity-scale' }
@@ -300,8 +302,8 @@ function getShiftAsInput(keyboard) {
  */
 function * stateEffects(
   keys,
-  { entity: es },
-  { entity: ed },
+  { entity: es, player: ps },
+  { entity: ed, player: pd },
   start,
 ) {
   /**
@@ -318,6 +320,23 @@ function * stateEffects(
     return { kind: 'delta', array, delta, index, dir, t };
   }
 
+  // player translate
+  if (keys['d']) yield diff(ps.translate, pd.translate, 0, 1, 'd');
+  if (keys['a']) yield diff(ps.translate, pd.translate, 0, -1, 'a');
+  if (keys['e']) yield diff(ps.translate, pd.translate, 1, 1, 'e');
+  if (keys['q']) yield diff(ps.translate, pd.translate, 1, -1, 'q');
+  if (keys['w']) yield diff(ps.translate, pd.translate, 2, 1, 'w');
+  if (keys['s']) yield diff(ps.translate, pd.translate, 2, -1, 's');
+
+  // player rotation
+  if (keys['1']) yield diff(ps.rotation, pd.rotation, 0, 1, '1');
+  if (keys['!']) yield diff(ps.rotation, pd.rotation, 0, -1, '!');
+  if (keys['2']) yield diff(ps.rotation, pd.rotation, 1, 1, '2');
+  if (keys['@']) yield diff(ps.rotation, pd.rotation, 1, -1, '@');
+  if (keys['3']) yield diff(ps.rotation, pd.rotation, 2, 1, '3');
+  if (keys['#']) yield diff(ps.rotation, pd.rotation, 2, -1, '#');
+
+  // entity translate
   if (keys['l']) yield diff(es.translate, ed.translate, 0, 1, 'l');
   if (keys['j']) yield diff(es.translate, ed.translate, 0, -1, 'j');
   if (keys['u']) yield diff(es.translate, ed.translate, 1, -1, 'u');
@@ -325,6 +344,7 @@ function * stateEffects(
   if (keys['i']) yield diff(es.translate, ed.translate, 2, 1, 'i');
   if (keys['k']) yield diff(es.translate, ed.translate, 2, -1, 'k');
 
+  // rotation translate
   if (keys['7']) yield diff(es.rotation, ed.rotation, 0, 1, '7');
   if (keys['&']) yield diff(es.rotation, ed.rotation, 0, -1, '&');
   if (keys['8']) yield diff(es.rotation, ed.rotation, 1, 1, '8');
@@ -332,12 +352,21 @@ function * stateEffects(
   if (keys['9']) yield diff(es.rotation, ed.rotation, 2, 1, '9');
   if (keys['(']) yield diff(es.rotation, ed.rotation, 2, -1, '(');
 
+  // scale translate
   if (keys['n']) yield diff(es.scale, ed.scale, 0, 1, 'n');
   if (keys['N']) yield diff(es.scale, ed.scale, 0, -1, 'N');
   if (keys['m']) yield diff(es.scale, ed.scale, 1, 1, 'm');
   if (keys['M']) yield diff(es.scale, ed.scale, 1, -1, 'M');
   if (keys[',']) yield diff(es.scale, ed.scale, 2, 1, ',');
   if (keys['<']) yield diff(es.scale, ed.scale, 2, -1, '<');
+
+  if (keys['a'] || keys['w'] || keys['s'] || keys['d'] || keys['q'] || keys['e']) {
+    yield { kind: 'update-player-translate' };
+  }
+
+  if (keys['1'] || keys['2'] || keys['3'] || keys['!'] || keys['@'] || keys['#']) {
+    yield { kind: 'update-player-rotation' };
+  }
 
   if (keys['j'] || keys['k'] || keys['l'] || keys['i'] || keys['u'] || keys['o']) {
     yield { kind: 'update-entity-translate' };
@@ -407,6 +436,10 @@ export function initControls({
   const events = [];
 
   const domLeafs = {
+    player: {
+      translate: createOutPair('stat-player-translate', 'Player Translate', ''),
+      rotation: createOutPair('stat-player-rotate', 'Player Rotation', ''),
+    },
     entity: {
       translate: createOutPair('stat-entity-translate', 'Entity Translate', ''),
       rotation: createOutPair('stat-entity-rotate', 'Entity Rotation', ''),
@@ -438,9 +471,19 @@ export function initControls({
         break;
 
       case 'init-stats':
+        internalEffect({ kind: 'update-player-translate' }, t);
+        internalEffect({ kind: 'update-player-rotation' }, t);
         internalEffect({ kind: 'update-entity-translate' }, t);
         internalEffect({ kind: 'update-entity-rotation' }, t);
         internalEffect({ kind: 'update-entity-scale' }, t);
+        break;
+
+      case 'update-player-translate':
+        domLeafs.player.translate.out.innerText = `[${pTranslate.map(e => e.toFixed(2)).join(', ')}]`;
+        break;
+
+      case 'update-player-rotation':
+        domLeafs.player.rotation.out.innerText = `[${pRotation.map(e => e.toFixed(2)).join(', ')}]`;
         break;
 
       case 'update-entity-translate':
@@ -552,6 +595,11 @@ export function initControls({
 
   const statsEl = document.getElementById('stats-tranform-state');
   if (statsEl) {
+    statsEl.appendChild(domLeafs.player.translate.label);
+    statsEl.appendChild(domLeafs.player.translate.out);
+    statsEl.appendChild(domLeafs.player.rotation.label);
+    statsEl.appendChild(domLeafs.player.rotation.out);
+
     statsEl.appendChild(domLeafs.entity.translate.label);
     statsEl.appendChild(domLeafs.entity.translate.out);
     statsEl.appendChild(domLeafs.entity.rotation.label);
