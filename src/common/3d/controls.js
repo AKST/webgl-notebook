@@ -460,6 +460,41 @@ export function initControls({
     },
   };
 
+  /** @type {KeyboardState} */
+  const keys = {
+    w: undefined,
+    a: undefined,
+    s: undefined,
+    d: undefined,
+    q: undefined,
+    e: undefined,
+    1: undefined,
+    2: undefined,
+    3: undefined,
+    '!': undefined,
+    '@': undefined,
+    '#': undefined,
+
+    j: undefined,
+    i: undefined,
+    k: undefined,
+    l: undefined,
+    u: undefined,
+    o: undefined,
+    7: undefined,
+    8: undefined,
+    9: undefined,
+    '&': undefined,
+    '*': undefined,
+    '(': undefined,
+    n: undefined,
+    m: undefined,
+    ',': undefined,
+    N: undefined,
+    M: undefined,
+    '<': undefined,
+  };
+
   /**
    * @param {InternalEffect} effect
    * @param {number} t
@@ -506,41 +541,6 @@ export function initControls({
         throw new Unreachable(effect);
     }
   }
-
-  /** @type {KeyboardState} */
-  const keys = {
-    w: undefined,
-    a: undefined,
-    s: undefined,
-    d: undefined,
-    q: undefined,
-    e: undefined,
-    1: undefined,
-    2: undefined,
-    3: undefined,
-    '!': undefined,
-    '@': undefined,
-    '#': undefined,
-
-    j: undefined,
-    i: undefined,
-    k: undefined,
-    l: undefined,
-    u: undefined,
-    o: undefined,
-    7: undefined,
-    8: undefined,
-    9: undefined,
-    '&': undefined,
-    '*': undefined,
-    '(': undefined,
-    n: undefined,
-    m: undefined,
-    ',': undefined,
-    N: undefined,
-    M: undefined,
-    '<': undefined,
-  };
 
   requestAnimationFrame(function f(t) {
     try {
