@@ -1,6 +1,7 @@
 /**
- * @import { VectorOf } from '../math/type.ts';
+ * @import { MatrixOf as Mat, VectorOf } from '../math/type.ts';
  */
+import * as math from '../math/value.js';
 
 /**
  * @param {WebGLRenderingContext} gl
@@ -97,8 +98,15 @@ export function setLetterF(gl, x, y, width, height, thickness) {
  * @param {number} height
  * @param {number} depth
  * @param {number} thickness
+ * @param {Mat<'r', 4, 4>} [transform]
  */
-export function setLetterF3d(gl, x, y, z, width, height, depth, thickness) {
+export function setLetterF3d(
+  gl,
+  x, y, z,
+  width, height, depth,
+  thickness,
+  transform = undefined,
+) {
   const x0 = x;
   const x30 = x + thickness;
   const x67 = (x + width * 2 / 3) | 0;
@@ -242,6 +250,18 @@ export function setLetterF3d(gl, x, y, z, width, height, depth, thickness) {
     x0, y150, z30,
     x0, y150, z0,
   ]);
+
+  if (transform) {
+    const { unit: { m } } = math;
+    transform = m.transpose(transform);
+    for (let ii = 0; ii < buffer.length; ii += 3) {
+      const va = m(4, 1)([buffer[ii]], [buffer[ii+1]], [buffer[ii+2]], [1]);
+      const vb = m.mul(transform, va);
+      buffer[ii + 0] = vb.mat[0][0];
+      buffer[ii + 1] = vb.mat[1][0];
+      buffer[ii + 2] = vb.mat[2][0];
+    }
+  }
 
   gl.bufferData(
       gl.ARRAY_BUFFER,

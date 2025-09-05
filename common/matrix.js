@@ -2,6 +2,7 @@
  * @import { MatrixOf as Mat } from '../math/type.ts';
  */
 import { matrix as m } from '../math/value.js';
+import * as math from '../math/value.js';
 
 export class Matrix2d {
   /** @param {number} w @param {number} h */

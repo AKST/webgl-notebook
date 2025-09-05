@@ -67,23 +67,32 @@ export function main () {
       translate: 100,
     },
     entity: {
-      translate: [-52, 152, -433],
-      rotation: [2.88, 6.70, 0.0],
-      scale: [2.2, 2.2, 2.2],
+      translate: [0, 0, 0],
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1],
     },
   });
 
-  const fov = installControlExtFov(1.05);
+  const fov = installControlExtFov({
+    fov: { value: 1.05, min: 0, max: 5 },
+    far: { value: 2000, min: 1, max: 10000 },
+    near: { value: 1, min: 0.1, max: 1000 },
+  });
 
   const vao = gl.createVertexArray();
   gl.bindVertexArray(vao);
 
 
+  const posTran = m.mul(
+    M.translate(-50, -75, -15),
+    M.rotateX(Math.PI),
+  );
+
   const posBuffer = gl.createBuffer();
   const posAttrLocation = gl.getAttribLocation(program, "a_position");
   gl.enableVertexAttribArray(posAttrLocation);
   gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
-  setLetterF(gl, 0, 0, 0, 100, 150, 10, 30);
+  setLetterF(gl, 0, 0, 0, 100, 150, 10, 30, posTran);
   gl.vertexAttribPointer(posAttrLocation, 3, gl.FLOAT, false, 0, 0);
 
   const clrBuffer = gl.createBuffer();
@@ -96,7 +105,7 @@ export function main () {
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
 
-  requestAnimationFrame(function f () {
+  requestAnimationFrame(function f (t) {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.enable(gl.CULL_FACE);
@@ -104,22 +113,34 @@ export function main () {
     gl.useProgram(program);
     gl.bindVertexArray(vao);
 
-    const [width, height] = state.screen.bounds;
     const tM = M.translate(...state.entity.translate);
     const rxM = M.rotateX(state.entity.rotation[0]);
     const ryM = M.rotateY(state.entity.rotation[1]);
     const rzM = M.rotateZ(state.entity.rotation[2]);
     const sM = M.scale(...state.entity.scale);
 
-    let matrix = M.perspective(fov.value, width / height, 1, 2000);
-    matrix = m.mul(tM, matrix);
-    matrix = m.mul(rxM, matrix);
-    matrix = m.mul(ryM, matrix);
-    matrix = m.mul(rzM, matrix);
-    matrix = m.mul(sM, matrix);
+    const count = 5, radius = 200, cameraAngle = t / 1000;
+    const [width, height] = state.screen.bounds;
+    const projectionM = M.perspective(fov.fov, width / height, fov.near, fov.far);
+    const cameraM = m.mul(M.translate(0, 0, radius * 1.5), M.rotateY(cameraAngle));
+    const viewM = math.inv(cameraM);
+    const viewProjM = m.mul(viewM, projectionM);
 
-    gl.uniformMatrix4fv(matUnifLocation, false, matrix.mat.flat());
-    gl.drawArrays(gl.TRIANGLES, 0, 16 * 6);
+    for (let ii = 0; ii < count; ++ii) {
+      const angle = ii * Math.PI * 2 / count;
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+
+      let matrix = m.mul(M.translate(x, 0, z), viewProjM);
+      matrix = m.mul(tM, matrix);
+      matrix = m.mul(rxM, matrix);
+      matrix = m.mul(ryM, matrix);
+      matrix = m.mul(rzM, matrix);
+      matrix = m.mul(sM, matrix);
+
+      gl.uniformMatrix4fv(matUnifLocation, false, matrix.mat.flat());
+      gl.drawArrays(gl.TRIANGLES, 0, 16 * 6);
+    }
 
     requestAnimationFrame(f);
   })
