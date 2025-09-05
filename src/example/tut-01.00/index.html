@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web GL Exercise</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-black: #1a1a1a;
+      --bg-msgrey: #c6c6c6;
+      --bg-greygreen: rgb(112, 121, 110);
+      --border-inset-grey: 3px inset #c6c6c6;
+      --border-outset-grey: 3px outset #c6c6c6;
+    }
+
+    html, body {
+      background: white;
+    }
+
+    canvas {
+      display: block;
+      background: black;
+      max-width: 100%;
+      max-height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <a href="../../..">Home</a>
+  <div class="container" id="container"></div>
+  <script type="module">
+    import { main } from './index.js';
+    main();
+  </script>
+</body>
+</html>
