@@ -5,7 +5,8 @@
  * }} Screen
  *
  * @typedef {[number, number, number]} A3
- * @typedef {{ translate: A3, rotation: A3 }} Player
+ * @typedef {[number, number, number, number]} A4
+ * @typedef {{ translate: A3, rotation: A4 }} Player
  * @typedef {{ translate: A3, scale: A3, rotation: A3 }} Entity
  *
  * @typedef {(
@@ -33,13 +34,15 @@
  *
  * @typedef {(
  *  | { kind: 'set-active-keys', keys: string[] }
+ *  | { kind: 'locked-mouse-move', x: number, y: number }
+ *  | { kind: 'player-translate', t: number, delta: A3  }
  *  | { kind: 'init-stats' }
  *  | { kind: 'update-player-translate' }
  *  | { kind: 'update-player-rotation' }
  *  | { kind: 'update-entity-translate' }
  *  | { kind: 'update-entity-rotation' }
  *  | { kind: 'update-entity-scale' }
- *  | { kind: 'delta', index: 0 | 1 | 2, dir: 1 | -1, t: number, array: A3, delta: number }
+ *  | { kind: 'delta', index: 0 | 1 | 2, dir: 1 | -1, t: number, array: A3 | A4, delta: number }
  * )} InternalEffect
  *
  * @typedef {(
@@ -53,6 +56,7 @@
  *
  * @typedef {Record<PlayerInput, number | undefined>} KeyboardState
  */
+import { applyDeltaNoclip, applyRotation } from './movement-planar.js';
 
 class Unreachable extends Error {
   /** @param {never} value */
@@ -307,7 +311,7 @@ function * stateEffects(
   start,
 ) {
   /**
-   * @param {A3} array
+   * @param {A3|A4} array
    * @param {number} delta
    * @param {0 | 1 | 2} index
    * @param {1 | -1} dir
@@ -320,13 +324,24 @@ function * stateEffects(
     return { kind: 'delta', array, delta, index, dir, t };
   }
 
+  /**
+   * @param {A3} delta
+   * @param {keyof keys} key
+   * @returns {InternalEffect}
+   */
+  const playerMove = (delta, key) => {
+    const t = /** @type {number} */ (keys[key]);
+    keys[key] = start;
+    return { kind: 'player-translate', delta, t };
+  }
+
   // player translate
-  if (keys['d']) yield diff(ps.translate, pd.translate, 0, 1, 'd');
-  if (keys['a']) yield diff(ps.translate, pd.translate, 0, -1, 'a');
-  if (keys['e']) yield diff(ps.translate, pd.translate, 1, 1, 'e');
-  if (keys['q']) yield diff(ps.translate, pd.translate, 1, -1, 'q');
-  if (keys['w']) yield diff(ps.translate, pd.translate, 2, 1, 'w');
-  if (keys['s']) yield diff(ps.translate, pd.translate, 2, -1, 's');
+  if (keys['d']) yield playerMove([1, 0, 0], 'd');
+  if (keys['a']) yield playerMove([-1, 0, 0], 'a');
+  if (keys['e']) yield playerMove([0, 1, 0], 'e');
+  if (keys['q']) yield playerMove([0, -1, 0], 'q');
+  if (keys['w']) yield playerMove([0, 0, -1], 'w');
+  if (keys['s']) yield playerMove([0, 0, 1], 's');
 
   // player rotation
   if (keys['1']) yield diff(ps.rotation, pd.rotation, 0, 1, '1');
@@ -383,6 +398,7 @@ function * stateEffects(
 
 /**
  * @param {{
+ *   screenLock?: boolean,
  *   window: Pick<Window, 'innerWidth' | 'innerHeight' | 'addEventListener'>,
  *   player?: Partial<Player>,
  *   playerDelta?: { translate?: number, rotation?: number },
@@ -392,6 +408,7 @@ function * stateEffects(
  * @returns {State}
  */
 export function initControls({
+  screenLock: useScreenLock = false,
   window,
   player: playerInit={},
   playerDelta = {},
@@ -414,19 +431,19 @@ export function initControls({
     },
   };
 
-  /** @type {[number, number, number]} */
+  /** @type {A3} */
   const pTranslate = playerInit.translate ?? [0, 0, 0];
 
-  /** @type {[number, number, number]} */
-  const pRotation = playerInit.rotation ?? [0, 0, 0];
+  /** @type {A4} */
+  const pRotation = playerInit.rotation ?? [0, 0, 0, 0];
 
-  /** @type {[number, number, number]} */
+  /** @type {A3} */
   const eTranslate = entityInit.translate ?? [0, 0, 0];
 
-  /** @type {[number, number, number]} */
+  /** @type {A3} */
   const eScale = entityInit.scale ?? [1, 1, 1];
 
-  /** @type {[number, number, number]} */
+  /** @type {A3} */
   const eRotation = entityInit.rotation ?? [0, 0, 0];
 
   /** @type {ExternalEvent[]} */
@@ -447,6 +464,8 @@ export function initControls({
     },
     activeKeys: createOutPair('stat-activekeys', 'Active Keys', ''),
   };
+
+  let screenLockActive = false;
 
   /** @type {State} */
   const state = {
@@ -533,6 +552,24 @@ export function initControls({
         domLeafs.entity.scale.out.innerText = `[${eScale.map(e => e.toFixed(2)).join(', ')}]`;
         break;
 
+      case 'locked-mouse-move':
+        applyRotation(
+          state.player.rotation,
+          [effect.x, effect.y],
+          deltas.player.rotation,
+        );
+        internalEffect({ kind: 'update-player-rotation' }, t);
+        break;
+
+      case 'player-translate':
+        applyDeltaNoclip(
+          state.player.translate,
+          state.player.rotation,
+          effect.delta,
+          deltas.player.translate * (t - effect.t),
+        );
+        break;
+
       case 'delta':
         effect.array[effect.index] += effect.dir * effect.delta * ((t - effect.t) / 1000);
         break;
@@ -568,7 +605,11 @@ export function initControls({
 
   /** @param {KeyboardEvent} event */
   window.addEventListener('keydown', event => {
-    if (event.key === 'Shift') {
+    if (event.key === 'Escape') {
+      bounds[0] = window.innerWidth;
+      bounds[1] = window.innerHeight;
+      exEvents.push({ kind: 'resize' });
+    } else if (event.key === 'Shift') {
       const [press, unpress] = getShiftAsInput(keys);
       for (const k of press) keys[k] = performance.now();
       for (const k of unpress) keys[k] = undefined;
@@ -592,6 +633,30 @@ export function initControls({
     }
     events.push({ kind: 'set-active-keys', keys: activeKeys(keys) });
   });
+
+  const [canvas] = document.getElementsByTagName('canvas');
+  if (canvas == null) throw new Error('no canvas');
+
+  /** @param {MouseEvent} event */
+  function updateRotationOnMouseMove(event) {
+    const { movementX: x, movementY: y } = event;
+    events.push({ kind: 'locked-mouse-move', x, y });
+  }
+
+  document.addEventListener('pointerlockchange', () => {
+    screenLockActive = document.pointerLockElement === canvas;
+    if (screenLockActive) {
+      document.addEventListener('mousemove', updateRotationOnMouseMove);
+    } else {
+      document.removeEventListener('mousemove', updateRotationOnMouseMove);
+    }
+  }, false);
+
+  if (useScreenLock) {
+    canvas.addEventListener('click', async () => {
+       await canvas.requestPointerLock({ unadjustedMovement: true });
+    });
+  }
 
   const statsEl = document.getElementById('stats-tranform-state');
   if (statsEl) {

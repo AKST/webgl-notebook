@@ -178,6 +178,27 @@ export class Matrix3d {
   }
 
   /**
+   * @param {number} x
+   * @param {number} y
+   * @param {number} z
+   * @param {number} w
+   * @returns {Mat<'r', 4, 4>}
+   */
+  static fromQuaternion(x, y, z, w) {
+    const x2 = x + x, y2 = y + y, z2 = z + z;
+    const xx = x * x2, xy = x * y2, xz = x * z2;
+    const yy = y * y2, yz = y * z2, zz = z * z2;
+    const wx = w * x2, wy = w * y2, wz = w * z2;
+
+    return m(4, 4)(
+      [1 - (yy + zz), xy - wz, xz + wy, 0],
+      [xy + wz, 1 - (xx + zz), yz - wx, 0],
+      [xz - wy, yz + wx, 1 - (xx + yy), 0],
+      [0, 0, 0, 1],
+    );
+  }
+
+  /**
    * @param {number} width
    * @param {number} height
    * @param {number} depth
