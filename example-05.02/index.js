@@ -73,7 +73,11 @@ export function main () {
     },
   });
 
-  const fov = installControlExtFov(1.05);
+  const fov = installControlExtFov({
+    fov: { value: 1.05, min: 0, max: 5 },
+    far: { value: 2000, min: 1, max: 10000 },
+    near: { value: 1, min: 0.1, max: 1000 },
+  });
 
   const vao = gl.createVertexArray();
   gl.bindVertexArray(vao);
@@ -111,7 +115,7 @@ export function main () {
     const rzM = M.rotateZ(state.entity.rotation[2]);
     const sM = M.scale(...state.entity.scale);
 
-    let matrix = M.perspective(fov.value, width / height, 1, 2000);
+    let matrix = M.perspective(fov.fov, width / height, fov.near, fov.far);
     matrix = m.mul(tM, matrix);
     matrix = m.mul(rxM, matrix);
     matrix = m.mul(ryM, matrix);

@@ -5,7 +5,7 @@ import { vector as v, matrix as m } from '../math/value.js';
 import * as math from '../math/value.js';
 import { Matrix3d as M } from '../common/matrix.js';
 import { initControls } from '../common/3d/controls.js';
-import { installControlExtFudge } from '../common/3d/controls_ext_fudge.js';
+import { installMiscNumKnob } from '../common/3d/controls_ext_misc.js';
 import {
   setLetterF3d as setLetterF,
   setLetterMatColors
@@ -62,9 +62,6 @@ export function main () {
   if (matUnifLocation == null) throw new Error("u_matrix");
   if (fudUnifLocation == null) throw new Error("u_fudgeFactor");
 
-  /** @param {number} d */
-  const degToRad = d => d * Math.PI / 180;
-
   const state = initControls({
     window,
     entityDelta: {
@@ -77,7 +74,7 @@ export function main () {
     },
   });
 
-  const fudge = installControlExtFudge(0);
+  const fudge = installMiscNumKnob('fudge', 0, 'View Fudge', [-10, 10]);
 
   const posBuffer = gl.createBuffer();
   const posAttrLocation = gl.getAttribLocation(program, "a_position");

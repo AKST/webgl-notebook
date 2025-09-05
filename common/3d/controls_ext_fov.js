@@ -1,7 +1,7 @@
 /**
  * @typedef {{ value: number, min: number, max: number }} InputCfg
  */
-import { createInput } from './controls.js';
+import { createOutPair as outputPair, createInput } from './controls.js';
 
 /**
  * @param {{
@@ -19,29 +19,29 @@ export function installControlExtFov(config) {
   const ctrlEl = document.getElementById('form-controls');
   if (ctrlEl == null) return { fov: 0, near: 0, far: 1 };
 
-  const fovOut = document.createElement('span');
-  const nearOut = document.createElement('span');
-  const farOut = document.createElement('span');
   let fov = config.fov.value;
   let near = config.near.value ?? 1;
   let far = config.far.value ?? 2000;
+  const fovOut = outputPair('stat-fov-out', 'FOV', fov.toFixed(2));
+  const nearOut = outputPair('stat-fov-near-out', 'FOV (near)', near.toFixed(2));
+  const farOut = outputPair('stat-fov-far-out', 'FOV (far)', near.toFixed(2));
 
   /** @param {number} value */
   const setFov = value => {
     fov = value;
-    fovOut.innerText = value.toFixed(2);
+    fovOut.out.innerText = value.toFixed(2);
   };
 
   /** @param {number} value */
   const setNear = value => {
     near = value;
-    nearOut.innerText = value.toFixed(2);
+    nearOut.out.innerText = value.toFixed(2);
   };
 
   /** @param {number} value */
   const setFar = value => {
     far = value;
-    farOut.innerText = value.toFixed(2);
+    farOut.out.innerText = value.toFixed(2);
   };
 
   const fovEls = createInput(
@@ -85,20 +85,17 @@ export function installControlExtFov(config) {
 
   const statsEl = document.getElementById('stats-tranform-state');
   if (statsEl) {
-    const fovLabel = document.createElement('label');
-    fovLabel.innerText = 'FOV';
-
-    statsEl.appendChild(fovLabel);
-    statsEl.appendChild(fovOut);
-
-    const nearLabel = document.createElement('label');
-    nearLabel.innerText = 'FOV (near)';
-
-    statsEl.appendChild(nearLabel);
-    statsEl.appendChild(nearOut);
+    statsEl.appendChild(fovOut.label);
+    statsEl.appendChild(fovOut.out);
+    statsEl.appendChild(nearOut.label);
+    statsEl.appendChild(nearOut.out);
+    statsEl.appendChild(farOut.label);
+    statsEl.appendChild(farOut.out);
   }
 
   setFov(fov);
+  setFar(far);
+  setNear(near);
 
   return {
     get far() { return far },

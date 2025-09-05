@@ -59,6 +59,24 @@ class Unreachable extends Error {
   }
 }
 
+/**
+ * @param {string} id
+ * @param {string} name
+ * @param {string} init
+ * @returns {{ label: HTMLElement, out: HTMLElement }}
+ */
+export function createOutPair(id, name, init) {
+  const label = document.createElement('strong');
+  label.innerText = name;
+  label.id = id;
+
+  const out = document.createElement('span');
+  out.setAttribute('aria-labelledby', id);
+  out.innerText = init;
+  out.style.fontFamily = 'monospace';
+  return { label, out };
+}
+
 
 /**
  * @param {string} id
@@ -389,11 +407,11 @@ export function initControls({
 
   const domLeafs = {
     entity: {
-      translate: document.createElement('span'),
-      rotation: document.createElement('span'),
-      scale: document.createElement('span'),
+      translate: createOutPair('stat-entity-translate', 'Entity Translate', ''),
+      rotation: createOutPair('stat-entity-rotate', 'Entity Rotation', ''),
+      scale: createOutPair('stat-entity-scale', 'Entity Scale', ''),
     },
-    activeKeys: document.createElement('span'),
+    activeKeys: createOutPair('stat-activekeys', 'Active Keys', ''),
   };
 
   /** @type {State} */
@@ -415,7 +433,7 @@ export function initControls({
   function internalEffect(effect, t) {
     switch (effect.kind) {
       case 'set-active-keys':
-        domLeafs.activeKeys.innerText = effect.keys.join(', ');
+        domLeafs.activeKeys.out.innerText = effect.keys.join(', ');
         break;
 
       case 'init-stats':
@@ -425,15 +443,15 @@ export function initControls({
         break;
 
       case 'update-entity-translate':
-        domLeafs.entity.translate.innerText = `[${eTranslate.map(e => e.toFixed(2)).join(', ')}]`;
+        domLeafs.entity.translate.out.innerText = `[${eTranslate.map(e => e.toFixed(2)).join(', ')}]`;
         break;
 
       case 'update-entity-rotation':
-        domLeafs.entity.rotation.innerText = `[${eRotation.map(e => e.toFixed(2)).join(', ')}]`;
+        domLeafs.entity.rotation.out.innerText = `[${eRotation.map(e => e.toFixed(2)).join(', ')}]`;
         break;
 
       case 'update-entity-scale':
-        domLeafs.entity.scale.innerText = `[${eScale.map(e => e.toFixed(2)).join(', ')}]`;
+        domLeafs.entity.scale.out.innerText = `[${eScale.map(e => e.toFixed(2)).join(', ')}]`;
         break;
 
       case 'delta':
@@ -531,31 +549,16 @@ export function initControls({
     events.push({ kind: 'set-active-keys', keys: activeKeys(keys) });
   });
 
-  /** @param {string} tagName @returns {(label: string, attrs?: Record<string, string>) => HTMLElement} */
-  const createLabelFactory = tagName => (label, attrs = {}) => {
-    const text = document.createTextNode(label);
-    const node = document.createElement(tagName);
-    for (const [k, v] of Object.entries(attrs)) {
-      node.setAttribute(k, v);
-    }
-    node.appendChild(text);
-    return node;
-  }
-
   const statsEl = document.getElementById('stats-tranform-state');
   if (statsEl) {
-    const createLabel = createLabelFactory('span');
-    statsEl.appendChild(createLabel('Entity Translate'));
-    statsEl.appendChild(domLeafs.entity.translate);
-
-    statsEl.appendChild(createLabel('Entity Rotation'));
-    statsEl.appendChild(domLeafs.entity.rotation);
-
-    statsEl.appendChild(createLabel('Entity Scale'));
-    statsEl.appendChild(domLeafs.entity.scale);
-
-    statsEl.appendChild(createLabel('Active Keys'));
-    statsEl.appendChild(domLeafs.activeKeys);
+    statsEl.appendChild(domLeafs.entity.translate.label);
+    statsEl.appendChild(domLeafs.entity.translate.out);
+    statsEl.appendChild(domLeafs.entity.rotation.label);
+    statsEl.appendChild(domLeafs.entity.rotation.out);
+    statsEl.appendChild(domLeafs.entity.scale.label);
+    statsEl.appendChild(domLeafs.entity.scale.out);
+    statsEl.appendChild(domLeafs.activeKeys.label);
+    statsEl.appendChild(domLeafs.activeKeys.out);
   }
 
   internalEffect({ kind: 'init-stats' }, performance.now());
@@ -579,10 +582,8 @@ export function initControls({
 
     ctrlEl.appendChild(etd.label);
     ctrlEl.appendChild(etd.input);
-
     ctrlEl.appendChild(erd.label);
     ctrlEl.appendChild(erd.input);
-
     ctrlEl.appendChild(esd.label);
     ctrlEl.appendChild(esd.input);
   }

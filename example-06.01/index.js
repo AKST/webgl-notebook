@@ -119,7 +119,7 @@ export function main () {
     let cameraM = M.rotateY(cameraAngle);
     cameraM = m.mul(M.translate(0, 0, radius * 1.5), cameraM);
     cameraM = M.lookat(
-      v(3)(cameraM.mat[3][0] + radius, cameraM.mat[3][1], cameraM.mat[3][2]),
+      v(3)(cameraM.mat[3][0], cameraM.mat[3][1], cameraM.mat[3][2]),
       v(3)(...state.entity.translate),
       v(3)(0, 1, 0),
     );
