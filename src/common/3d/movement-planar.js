@@ -1,4 +1,3 @@
-// ----------------- Quaternion utils ([x,y,z,w], w last) -----------------
 /**
  * @param {number} ax
  * @param {number} ay
@@ -55,24 +54,6 @@ function rotateVecByQuat3(v, q) {
     v[0] + w*tx + (y*tz - z*ty),
     v[1] + w*ty + (z*tx - x*tz),
     v[2] + w*tz + (x*ty - y*tx),
-  ];
-}
-
-// ----------------- (Optional) Euler → quat helper -----------------
-/**
- * @param {[number, number, number]} euler // [rx, ry, rz] radians
- * @returns {[number, number, number, number]} // [x,y,z,w]
- */
-export function quatFromEulerXYZ([rx, ry, rz]) {
-  const cx = Math.cos(rx*0.5), sx = Math.sin(rx*0.5);
-  const cy = Math.cos(ry*0.5), sy = Math.sin(ry*0.5);
-  const cz = Math.cos(rz*0.5), sz = Math.sin(rz*0.5);
-  // intrinsic X→Y→Z
-  return [
-    sx*cy*cz - cx*sy*sz,                   // x
-    cx*sy*cz + sx*cy*sz,                   // y
-    cx*cy*sz - sx*sy*cz,                   // z
-    cx*cy*cz + sx*sy*sz,                   // w
   ];
 }
 
