@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web GL Exercise</title>
+  <style>
+    @import '../common/style/base.css';
+  </style>
+</head>
+<body>
+  <details id="controls" open>
+    <summary>Controls</summary>
+    <nav>
+      <a href="../..">Home</a>
+      <a href="https://webglfundamentals.org/webgl/lessons/webgl-3d-perspective.html">Tutorial</a>
+    </nav>
+    <hr>
+    <p>This introduces camera positioning.</p>
+    <ul>
+      <li>JKLUIO — for translation</li>
+      <li>789 for rotation (Shift for reverse)</li>
+      <li>mn, — for scaling (Shift for reverse)</li>
+    </ul>
+    <hr>
+    <fieldset id='form-controls'>
+      <legend>Controls</legend>
+    </fieldset>
+  </details>
+  <details id="stats">
+    <summary>Stats</summary>
+    <div id='stats-tranform-state'>
+    </div>
+    <br>
+  </details>
+  <div class="container" id="container"></div>
+  <script type="module">
+    import { main } from './index.js';
+    main();
+  </script>
+</body>
+</html>
