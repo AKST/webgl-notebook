@@ -368,3 +368,76 @@ export function setLetterMatColors(gl, front, side, above, under) {
       buffer,
       gl.STATIC_DRAW);
 }
+
+/**
+ * @param {WebGLRenderingContext} gl
+ */
+export function setLetterNormals(gl) {
+  /**
+   * @param {number} x
+   * @param {number} y
+   * @param {number} z
+   */
+  const norms = (x, y, z) => {
+    const out = [];
+    for (let i = 0; i < 6; i++) {
+      out.push(x, y, z);
+    }
+    return out;
+  }
+
+  const buffer = new Uint8Array([
+    // left column front
+    ...norms(0, 0, 1),
+
+    // top rung front
+    ...norms(0, 0, 1),
+
+    // middle rung front
+    ...norms(0, 0, 1),
+
+    // left column back
+    ...norms(0, 0, -1),
+
+    // top rung back
+    ...norms(0, 0, -1),
+
+    // middle rung back
+    ...norms(0, 0, -1),
+
+    // top
+    ...norms(0, 1, 0),
+
+    // top rung right
+    ...norms(1, 0, 0),
+
+    // under top rung
+    ...norms(0, -1, 0),
+
+    // between top rung and middle
+    ...norms(1, 0, 0),
+
+    // top middle rung
+    ...norms(0, 1, 0),
+
+    // right of middle rung
+    ...norms(1, 0, 0),
+
+    // bottom of middle rung
+    ...norms(0, -1, 0),
+
+    // right of bottom
+    ...norms(1, 0, 0),
+
+    // bottom
+    ...norms(0, -1, 0),
+
+    // left side
+    ...norms(0, -1, 0),
+  ]);
+
+  gl.bufferData(
+      gl.ARRAY_BUFFER,
+      buffer,
+      gl.STATIC_DRAW);
+}

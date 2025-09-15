@@ -6,5 +6,6 @@ mkdir -p out
 
 cp index.html out/.
 cp -r src out/.
+cp -r models out/.
 
 pushd out

@@ -20,13 +20,14 @@ const vertexShaderSrc = version + `
   in vec4 a_position;
   in vec3 a_normal;
 
-  uniform mat4 u_matrix;
+  uniform mat4 u_worldViewProjection;
+  uniform mat4 u_world;
 
   out vec3 v_normal;
 
   void main() {
-    gl_Position = u_matrix * a_position;
-    v_normal = a_normal;
+    gl_Position = u_worldViewProjection * a_position;
+    v_normal = mat3(u_world) * a_normal;
   }
 `;
 
@@ -83,7 +84,8 @@ export function main () {
   const program = createProgram(gl, vShader, fShader);
   gl.useProgram(program);
 
-  const matUnifLocation = getUniformLoc(gl, program, "u_matrix")
+  const matUnifLocation = getUniformLoc(gl, program, "u_worldViewProjection")
+  const wldUnifLocation = getUniformLoc(gl, program, "u_world");
   const rldUnifLocation = getUniformLoc(gl, program, "u_reverseLightDirection");
   const clrUnifLocation = getUniformLoc(gl, program, "u_color");
 
@@ -99,12 +101,12 @@ export function main () {
       translate: 100,
     },
     player: {
-      translate: [109.55, 0.00, 153.18],
-      rotation: [0.44, -0.05, 0.89, -0.08],
+      translate: [-5.09, -83.00, 168.27],
+      rotation: [0.04, -0.31, 0.95, -0.09],
     },
     entity: {
       translate: [0, 0, 0],
-      rotation: [-3.21, 0, 0],
+      rotation: [-3.21, 2.46, 0.00],
       scale: [1, 1, 1],
     },
   });
@@ -157,13 +159,18 @@ export function main () {
     const viewM = math.inv(cameraM);
     const viewProjM = m.mul(viewM, projectionM);
 
-    let matrix = viewProjM;
-    matrix = m.mul(M.translate(...state.entity.translate), matrix);
-    matrix = m.mul(M.rotateX(state.entity.rotation[0]), matrix);
-    matrix = m.mul(M.rotateY(state.entity.rotation[1]), matrix);
-    matrix = m.mul(M.rotateZ(state.entity.rotation[2]), matrix);
-    matrix = m.mul(M.scale(...state.entity.scale), matrix);
-    gl.uniformMatrix4fv(matUnifLocation, false, matrix.mat.flat());
+    let world = M.translate(...state.entity.translate);
+    world = m.mul(M.rotateX(state.entity.rotation[0]), world);
+    world = m.mul(M.rotateY(state.entity.rotation[1]), world);
+    world = m.mul(M.rotateZ(state.entity.rotation[2]), world);
+    world = m.mul(M.scale(...state.entity.scale), world);
+
+    // world view projection matrix
+    const wvpm = m.mul(world, viewProjM)
+    const winvt = m.transpose(math.inv(world));
+
+    gl.uniformMatrix4fv(matUnifLocation, false, wvpm.mat.flat());
+    gl.uniformMatrix4fv(wldUnifLocation, false, winvt.mat.flat());
     gl.uniform4fv(clrUnifLocation, COLOR_A.vec);
     gl.uniform3fv(rldUnifLocation, v.unit(LIGHT).vec);
 
