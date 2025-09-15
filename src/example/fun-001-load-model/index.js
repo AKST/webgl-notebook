@@ -8,36 +8,43 @@ import * as math from '../../math/value.js';
 import { Matrix3d as M } from '../../common/matrix.js';
 import { initControls } from '../../common/3d/controls.js';
 import { installControlExtFov } from '../../common/3d/controls_ext_fov.js';
-import {
-  setLetterF3d as setLetterF,
-  setLetterMatColors
-} from '../../common/buffer.js';
 import { createShader, createProgram } from '../../common/init.js';
-import { loadGLB } from '../../common/resources/load_glb.js';
+import { loadGLTB, createGLTBMesh } from '../../common/resources/load_glb.js';
+
+class Unreachable extends Error {
+  /** @param {never} value */
+  constructor(value) {
+    super('unreachable ' + JSON.stringify(value));
+  }
+}
 
 const version = "#version 300 es\n"
 
 const vertexShaderSrc = version + `
   in vec4 a_position;
-  in vec4 a_color;
-  out vec4 v_color;
+  in vec2 a_texcoord;
 
   uniform mat4 u_matrix;
 
+  out vec2 v_texcoord;
+
   void main() {
     gl_Position = u_matrix * a_position;
-    v_color = a_color;
+    v_texcoord = a_texcoord;
   }
 `;
 
 const fragmentShaderSrc = version + `
   precision mediump float;
 
-  in vec4 v_color;
+  in vec2 v_texcoord;
+
+  uniform sampler2D u_texture;
+
   out vec4 outColor;
 
   void main() {
-    outColor = v_color;
+    outColor = texture(u_texture, v_texcoord);
   }
 `;
 
@@ -45,7 +52,7 @@ export async function main () {
   const container = document.getElementById('container');
   if (container == null) throw new Error('container');
 
-  const model = await loadGLB("../../../models/sign_nswft_petersham/export_20250908.glb")
+  const model = await loadGLTB("../../../models/sign_nswft_petersham/export_20250908.glb");
   console.log(model);
 
   const canvas = document.createElement('canvas');
@@ -58,13 +65,24 @@ export async function main () {
   const gl = canvas.getContext("webgl2");
   if (gl == null) throw new Error('getContext');
 
+
   const vShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSrc);
   const fShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSrc);
   const program = createProgram(gl, vShader, fShader);
   gl.useProgram(program);
 
+  const posAttrLocation = gl.getAttribLocation(program, "a_position");
+  const texAttrLocation = gl.getAttribLocation(program, "a_texcoord");
+  const modelHydrated = await createGLTBMesh(gl, model, {
+    vertice: posAttrLocation,
+    texture: texAttrLocation,
+  });
+
   const matUnifLocation = gl.getUniformLocation(program, "u_matrix")
   if (matUnifLocation == null) throw new Error("u_matrix");
+
+  const txtUnifLocation = gl.getUniformLocation(program, "u_texture")
+  if (matUnifLocation == null) throw new Error("u_texture");
 
   const state = initControls({
     screenLock: true,
@@ -94,28 +112,6 @@ export async function main () {
     near: { value: 1, min: 0.1, max: 1000 },
   });
 
-  const vao = gl.createVertexArray();
-  gl.bindVertexArray(vao);
-
-  const posTran = m.mul(
-    M.translate(-50, -75, -15),
-    M.rotateX(Math.PI),
-  );
-
-  const posBuffer = gl.createBuffer();
-  const posAttrLocation = gl.getAttribLocation(program, "a_position");
-  gl.enableVertexAttribArray(posAttrLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
-  setLetterF(gl, 0, 0, 0, 100, 150, 10, 30, posTran);
-  gl.vertexAttribPointer(posAttrLocation, 3, gl.FLOAT, false, 0, 0);
-
-  const clrBuffer = gl.createBuffer();
-  const clrAttrLocation = gl.getAttribLocation(program, "a_color");
-  gl.enableVertexAttribArray(clrAttrLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, clrBuffer);
-  setLetterMatColors(gl, 0xff0088, 0xaa3366, 0xff66aa, 0x660000);
-  gl.vertexAttribPointer(clrAttrLocation, 3, gl.UNSIGNED_BYTE, true, 0, 0);
-
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -125,7 +121,6 @@ export async function main () {
     gl.enable(gl.CULL_FACE);
     gl.enable(gl.DEPTH_TEST);
     gl.useProgram(program);
-    gl.bindVertexArray(vao);
 
     const cameraRM = M.fromQuaternion(...state.player.rotation);
     const cameraTM = M.translate(...state.player.translate);
@@ -142,8 +137,33 @@ export async function main () {
     matrix = m.mul(M.rotateY(state.entity.rotation[1]), matrix);
     matrix = m.mul(M.rotateZ(state.entity.rotation[2]), matrix);
     matrix = m.mul(M.scale(...state.entity.scale), matrix);
-    gl.uniformMatrix4fv(matUnifLocation, false, matrix.mat.flat());
-    gl.drawArrays(gl.TRIANGLES, 0, 16 * 6);
+
+    for (const node of modelHydrated.nodes) {
+      let nodeM = matrix;
+      console.log(node);
+      nodeM = m.mul(M.translate(...node.translate), nodeM);
+      nodeM = m.mul(M.scale(...node.scale), nodeM);
+
+      gl.uniformMatrix4fv(matUnifLocation, false, nodeM.mat.flat());
+      for (const mesh of node.mesh) {
+        const texture = modelHydrated.textures[mesh.textureIndex];
+        gl.bindVertexArray(mesh.vao);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.uniform1i(txtUnifLocation, 0);
+
+        switch (mesh.drawMode.kind) {
+          case 'element':
+            gl.drawElements(gl.TRIANGLES, mesh.drawMode.indexCount, gl.UNSIGNED_SHORT, 0);
+            break;
+          case 'arrayes':
+            gl.drawArrays(gl.TRIANGLES, 0, mesh.drawMode.vertexCount);
+            break;
+          default:
+            throw new Unreachable(mesh.drawMode);
+        }
+      }
+    }
 
     requestAnimationFrame(f);
   })
