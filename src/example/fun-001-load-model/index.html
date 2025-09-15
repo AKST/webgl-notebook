@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web GL Exercise</title>
+  <style>
+    @import '../../common/style/base.css';
+  </style>
+</head>
+<body>
+  <details id="controls">
+    <summary>Controls</summary>
+    <h1>About</h1>
+    <nav>
+      <a href="../../..">Home</a>
+      <a href="https://webglfundamentals.org/webgl/lessons/webgl-3d-perspective.html">Tutorial</a>
+    </nav>
+    <hr>
+    <p>I am trying to load a model here.</p>
+    <hr>
+    <fieldset id='form-controls'>
+      <legend>Controls, Config and Sensitivity</legend>
+    </fieldset>
+  </details>
+  <details id="stats" open>
+    <summary>Stats</summary>
+    <div id='stats-tranform-state'>
+    </div>
+    <br>
+  </details>
+  <div class="container" id="container"></div>
+  <script type="module">
+    import { main } from './index.js';
+    main();
+  </script>
+</body>
+</html>

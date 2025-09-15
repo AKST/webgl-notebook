@@ -50,6 +50,10 @@ canvas {
   &[open] {
     width: 350px;
   }
+
+  :is(h1, h2, h3, h4, h5) {
+    margin: 8px 0;
+  }
 }
 
 #controls, #stats {
