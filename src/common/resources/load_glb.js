@@ -1,4 +1,5 @@
 /**
+ * @import { MatrixOf } from '../../math/type.ts';
  * @import { Gltf } from './type.ts';
  *
  * @typedef {{ gltf: Gltf, binary: ArrayBuffer }} GltfModel
@@ -16,10 +17,11 @@
  *
  * @typedef {{
  *   mesh: readonly Mesh[],
- *   translate: [number, number, number],
- *   scale: [number, number, number],
+ *   matrix: MatrixOf<'r', 4, 4>,
  * }} ModelNode
  */
+import { matrix as m } from '../../math/value.js';
+import { Matrix3d as M } from '../matrix.js';
 
 /**
  * @param {string} url
@@ -90,7 +92,7 @@ export async function createGLTBMesh(
     if (bufferView == null) throw new Error();
 
     const imageData = new Uint8Array(binary, bufferView.byteOffset, bufferView.byteLength);
-    const imageBitmap = await createImageBitmap(new Blob([imageData], { type: bufferView.mimeType }));
+    const imageBitmap = await createImageBitmap(new Blob([imageData], { type: image.mimeType }));
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, imageBitmap);
@@ -134,7 +136,7 @@ export async function createGLTBMesh(
       gl.vertexAttribPointer(attributes.texture, 2, gl.FLOAT, false, 0, 0);
 
       const material = gltf.materials[primitive.material];
-      const textureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
+      const textureIndex = gltf.textures[material.pbrMetallicRoughness.baseColorTexture.index].source;
 
       /** @type {DrawMode} */
       let drawMode;
@@ -164,13 +166,11 @@ export async function createGLTBMesh(
   const nodes = scene.nodes.map(nodeIndex => {
     const node = gltf.nodes[nodeIndex];
     const mesh = meshes[node.mesh];
-    console.log(node);
 
     /** @type {Node} */
     return {
       mesh,
-      scale: node.scale,
-      translate: node.translation,
+      matrix: m.mul(M.scale(...node.scale), M.translate(...node.translation)),
     };
   });
 

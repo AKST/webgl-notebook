@@ -52,9 +52,7 @@ export async function main () {
   const container = document.getElementById('container');
   if (container == null) throw new Error('container');
 
-  const model = await loadGLTB("../../../models/sign_nswft_petersham/export_20250908.glb");
-  console.log(model);
-
+  const model = await loadGLTB("../../../models/sign_nswft_petersham/export_20250915.glb");
   const canvas = document.createElement('canvas');
   container.appendChild(canvas);
 
@@ -89,19 +87,19 @@ export async function main () {
     window,
     playerDelta: {
       rotation: 0.01,
-      translate: 1,
+      translate: 0.01,
     },
     entityDelta: {
       rotation: 1,
       translate: 100,
     },
     player: {
-      translate: [94.30, 0.00, 54.23],
-      rotation: [0.93, -0.08, 0.36, -0.05],
+      translate: [3.89, 0.00, 166.67],
+      rotation: [0.97, -0.08, 0.21, -0.06],
     },
     entity: {
-      translate: [-34.80, 0.00, 176.50],
-      rotation: [-3.21, 0, 0],
+      translate: [1.40, 4.30, 172.60],
+      rotation: [-2.92, -0.43, 0.00],
       scale: [1, 1, 1],
     },
   });
@@ -140,9 +138,7 @@ export async function main () {
 
     for (const node of modelHydrated.nodes) {
       let nodeM = matrix;
-      console.log(node);
-      nodeM = m.mul(M.translate(...node.translate), nodeM);
-      nodeM = m.mul(M.scale(...node.scale), nodeM);
+      nodeM = m.mul(node.matrix, nodeM);
 
       gl.uniformMatrix4fv(matUnifLocation, false, nodeM.mat.flat());
       for (const mesh of node.mesh) {

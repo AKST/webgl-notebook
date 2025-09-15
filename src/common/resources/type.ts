@@ -36,6 +36,9 @@ export type GltScene =
 export type GltNode =
   { name: string, mesh: number, scale: V3, translation: V3 };
 
+export type GltTexture =
+  { source: number, sampler: number };
+
 export type Gltf = {
   accessors: readonly GltAccessor[],
   bufferViews: readonly GltBufferView[],
@@ -45,5 +48,6 @@ export type Gltf = {
   nodes: readonly GltNode[],
   scene: number,
   scenes: readonly GltScene[];
+  textures: readonly GltTexture[],
 };
 
