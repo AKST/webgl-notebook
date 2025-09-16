@@ -90,6 +90,17 @@ export function setLetterF(gl, x, y, width, height, thickness) {
 }
 
 /**
+ * @returns {Generator<{
+ *   vertice: [number, number, number],
+ *   color: [number, number, number],
+ *   normal: [number, number, number],
+ * }>}
+ */
+function * letterF() {
+
+}
+
+/**
  * @param {WebGLRenderingContext} gl
  * @param {number} x
  * @param {number} y
@@ -386,7 +397,7 @@ export function setLetterNormals(gl) {
     return out;
   }
 
-  const buffer = new Uint8Array([
+  const buffer = new Float32Array([
     // left column front
     ...norms(0, 0, 1),
 
@@ -433,7 +444,7 @@ export function setLetterNormals(gl) {
     ...norms(0, -1, 0),
 
     // left side
-    ...norms(0, -1, 0),
+    ...norms(-1, 0, 0),
   ]);
 
   gl.bufferData(

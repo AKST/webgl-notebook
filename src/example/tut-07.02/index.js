@@ -21,14 +21,20 @@ const vertexShaderSrc = version + `
   in vec4 a_position;
   in vec3 a_normal;
 
-  uniform mat4 u_worldViewProjection;
-  uniform mat4 u_worldInverseTranspose;
+  uniform vec3 u_lightWorldPosition;
+  uniform mat4 u_world;
+  uniform mat4 u_viewProjection;
 
   out vec3 v_normal;
+  out vec3 v_surfaceToLight;
 
   void main() {
-    gl_Position = u_worldViewProjection * a_position;
-    v_normal = mat3(u_worldInverseTranspose) * a_normal;
+    vec4 surfaceWorldPosition = u_world * a_position;
+
+    gl_Position = u_viewProjection * surfaceWorldPosition;
+
+    v_normal = mat3(transpose(inverse(u_world))) * a_normal;
+    v_surfaceToLight = u_lightWorldPosition - surfaceWorldPosition.xyz;
   }
 `;
 
@@ -36,6 +42,7 @@ const fragmentShaderSrc = version + `
   precision mediump float;
 
   in vec3 v_normal;
+  in vec3 v_surfaceToLight;
 
   uniform vec3 u_reverseLightDirection;
   uniform vec4 u_color;
@@ -44,9 +51,11 @@ const fragmentShaderSrc = version + `
 
   void main() {
     vec3 normal = normalize(v_normal);
-    float light = dot(normal, u_reverseLightDirection);
+    vec3 surfaceToLightDirection = normalize(v_surfaceToLight);
+    float lightDirectional = dot(normal, u_reverseLightDirection);
+    float lightPoint = dot(normal, surfaceToLightDirection);
     outColor = u_color;
-    outColor.rgb *= light;
+    outColor.rgb *= lightDirectional + lightPoint;
   }
 `;
 
@@ -64,7 +73,8 @@ function getUniformLoc(gl, program, name) {
 
 const COLOR_A = v(4)(1, 0, 0.5, 1);
 const COLOR_B = v(4)(1, 0.375, 0.625, 1);
-const LIGHT = v(3)(0.5, 0.7, 1);
+const LIGHT_DIRECTION = v(3)(0.5, 0.7, 1);
+const LIGHT_POINT = v(3)(20, 30, 50);
 
 export function main () {
   const dbg = installDebugger();
@@ -86,10 +96,11 @@ export function main () {
   const program = createProgram(gl, vShader, fShader);
   gl.useProgram(program);
 
-  const matUnifLocation = getUniformLoc(gl, program, "u_worldViewProjection")
-  const wldUnifLocation = getUniformLoc(gl, program, "u_worldInverseTranspose");
-  const rldUnifLocation = getUniformLoc(gl, program, "u_reverseLightDirection");
-  const clrUnifLocation = getUniformLoc(gl, program, "u_color");
+  const uWorld = getUniformLoc(gl, program, "u_world")
+  const uViewProjection = getUniformLoc(gl, program, "u_viewProjection")
+  const uLightWorldPosition = getUniformLoc(gl, program, "u_lightWorldPosition");
+  const uReverseLightDirection = getUniformLoc(gl, program, "u_reverseLightDirection");
+  const uColor = getUniformLoc(gl, program, "u_color");
 
   const state = initControls({
     screenLock: true,
@@ -161,7 +172,7 @@ export function main () {
     const [width, height] = state.screen.bounds;
     const projectionM = M.perspective(fov.fov, width / height, fov.near, fov.far);
     const viewM = math.inv(cameraM);
-    const viewProjM = m.mul(viewM, projectionM);
+    const viewProjection = m.mul(viewM, projectionM);
 
     let worldRotation = m.identity(4);
     worldRotation = m.mul(M.rotateX(state.entity.rotation[0]), worldRotation);
@@ -172,14 +183,11 @@ export function main () {
     world = m.mul(worldRotation, world);
     world = m.mul(M.scale(...state.entity.scale), world);
 
-    // world view projection matrix
-    const wvpm = m.mul(world, viewProjM)
-    const winvt = m.transpose(math.inv(worldRotation));
-
-    gl.uniformMatrix4fv(matUnifLocation, false, wvpm.mat.flat());
-    gl.uniformMatrix4fv(wldUnifLocation, false, winvt.mat.flat());
-    gl.uniform4fv(clrUnifLocation, COLOR_A.vec);
-    gl.uniform3fv(rldUnifLocation, v.unit(LIGHT).vec);
+    gl.uniformMatrix4fv(uWorld, false, world.mat.flat());
+    gl.uniformMatrix4fv(uViewProjection, false, viewProjection.mat.flat());
+    gl.uniform4fv(uColor, COLOR_A.vec);
+    gl.uniform3fv(uReverseLightDirection, v.unit(LIGHT_DIRECTION).vec);
+    gl.uniform3fv(uLightWorldPosition, LIGHT_POINT.vec)
 
     gl.drawArrays(gl.TRIANGLES, 0, 16 * 6);
     dbg.flush();
