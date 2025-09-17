@@ -103,8 +103,8 @@ export const createInput = (id, labelText, min, max, value, onChange, step='any'
   input.type = 'range';
   input.max = '' + max;
   input.min = '' + min;
-  input.value = '' +value;
   input.step = step;
+  input.value = '' +value;
 
   let mousedown = false;
   input.addEventListener('change', () => onChange(parseFloat(input.value)));

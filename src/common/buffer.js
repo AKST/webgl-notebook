@@ -452,3 +452,83 @@ export function setLetterNormals(gl) {
       buffer,
       gl.STATIC_DRAW);
 }
+
+/**
+ * @param {WebGLRenderingContext} gl
+ * @param {GLint} attribute
+ * @param {{ min: number, max: number, step: number }} xCfg
+ * @param {{ min: number, max: number, step: number }} zCfg
+ * @param {boolean} [doubleSided]
+ * @returns {number}
+ */
+export function generateXyMesh(gl, attribute, xCfg, zCfg, doubleSided = false) {
+  const posBuffer = gl.createBuffer();
+  gl.enableVertexAttribArray(attribute);
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+
+  /** @type {number[]} */
+  const array = [];
+
+  for (let x = xCfg.min; x < xCfg.max; x += xCfg.step) {
+    for (let z = zCfg.min; z < zCfg.max; z += zCfg.step) {
+      array.push(
+        x + xCfg.step, z,
+        x, z,
+        x + xCfg.step, z + zCfg.step,
+      );
+      array.push(
+        x, z,
+        x, z + zCfg.step,
+        x + xCfg.step, z + zCfg.step,
+      );
+    }
+  }
+
+  if (doubleSided) {
+    for (let x = xCfg.min; x < xCfg.max; x += xCfg.step) {
+      for (let z = zCfg.min; z < zCfg.max; z += zCfg.step) {
+        array.push(
+          x, z,
+          x + xCfg.step, z,
+          x + xCfg.step, z + zCfg.step,
+        );
+        array.push(
+          x, z + zCfg.step,
+          x, z,
+          x + xCfg.step, z + zCfg.step,
+        );
+      }
+    }
+  }
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(array), gl.STATIC_DRAW);
+  gl.vertexAttribPointer(attribute, 2, gl.FLOAT, false, 0, 0);
+  return array.length / 2;
+}
+
+/**
+ * @param {WebGLRenderingContext} gl
+ * @param {GLint} attribute
+ * @returns {number}
+ */
+export function xzMesh(gl, attribute) {
+  const buffer = gl.createBuffer();
+  gl.enableVertexAttribArray(attribute);
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+
+  /** @type {number[]} */
+  const array = [
+    +0.5, +0.5,
+    +0.5, -0.5,
+    -0.5, +0.5,
+
+    -0.5, +0.5,
+    +0.5, -0.5,
+    -0.5, -0.5,
+  ];
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(array), gl.STATIC_DRAW);
+  gl.vertexAttribPointer(attribute, 2, gl.FLOAT, false, 0, 0);
+
+  return array.length / 2;
+}
