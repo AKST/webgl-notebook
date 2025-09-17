@@ -99,7 +99,40 @@ const SHADERS = {
         outColor = texture(u_texture, v_texcoord);
       }
     `,
-  }
+  },
+  /** @type {{ vertex: string, fragment: string }} */
+  grid: {
+    vertex: version + `
+      in vec2 a_position;
+      uniform mat4 u_world, u_viewProjection;
+      out vec2 v_worldPos;
+
+      void main() {
+        vec4 w = u_world * vec4(a_position.x, 0, a_position.y, 1.0);
+        gl_Position = u_viewProjection * w;
+        v_worldPos = a_position.xy;
+      }
+    `,
+    fragment: version + `
+      precision mediump float;
+      in vec2 v_worldPos;
+      uniform vec4 u_color;
+      uniform float u_width, u_stroke;
+      out vec4 outColor;
+
+      void main() {
+        vec2 c = v_worldPos / max(u_width, 1e-6);
+        vec2 d = abs(fract(c) - 0.5);
+        vec2 w = fwidth(c) * u_stroke;
+
+        float line = min(u_color.w, 1.0 - min(min(d.x / w.x, d.y / w.y), 1.0));
+
+        if (line <= 0.0) discard;
+        outColor = vec4(u_color.xyz, line);
+      }
+    `,
+
+  },
 };
 
 export function main () {
@@ -117,7 +150,6 @@ export function main () {
   const gl = canvas.getContext("webgl2");
   if (gl == null) throw new Error('getContext');
 
-  const tOutput = makeText(gl, 'Output', { fontSize: 64, font: 'Helvetica', fillStyle: 'white' });
   const tLabour = makeText(gl, 'Labour', { fontSize: 64, font: 'Helvetica', fillStyle: 'white' });
   const tCapital = makeText(gl, 'Capital', { fontSize: 64, font: 'Helvetica', fillStyle: 'white' });
 
@@ -143,6 +175,17 @@ export function main () {
     },
   });
 
+  const pGrid = makeProgram(gl, SHADERS.grid, {
+    attr: { position: 'a_position' },
+    unif: {
+      color: 'u_color',
+      world: 'u_world',
+      width: 'u_width',
+      stroke: 'u_stroke',
+      viewProjection: 'u_viewProjection',
+    },
+  });
+
   const state = initControls({
     screenLock: false,
     window,
@@ -155,7 +198,7 @@ export function main () {
       translate: 100,
     },
     player: {
-      translate: [161.49, -344.00, -670.29],
+      translate: [303.89, -728.00, -1227.38],
       rotation: [-0.96, -0.03, -0.12, 0.24],
     },
     entity: {
@@ -171,7 +214,7 @@ export function main () {
     near: { value: 1, min: 0.1, max: 1000 },
   });
 
-  const technology = installMiscNumKnob('techology', 30, 'Technology', [0, 500]);
+  const technology = installMiscNumKnob('techology', 30, 'Technology', [0, 100]);
   const alpha = installMiscNumKnob('alpha', 2/3, 'Alpha', [0, 1]);
 
   /**
@@ -188,15 +231,18 @@ export function main () {
   const vaoMesh = gl.createVertexArray();
   gl.bindVertexArray(vaoMesh);
 
-  const xCfg = { min: 0, max: 600, step: 50 };
-  const zCfg = { min: 0, max: 600, step: 50 };
+  const xCfg = { min: 0, max: 1100, step: 50 };
+  const zCfg = { min: 0, max: 1100, step: 50 };
   const sizeMesh = generateXyMesh(gl, pMesh.attr.position, xCfg, zCfg, true);
   const meshOffset = [-(xCfg.max / 2), 0, -(zCfg.max / 2)]
 
   const vaoText = gl.createVertexArray();
   gl.bindVertexArray(vaoText);
   const sizeText = xzMesh(gl, pText.attr.position);
-  console.log(tLabour.canvas);
+
+  const vaoGrid = gl.createVertexArray();
+  gl.bindVertexArray(vaoGrid);
+  const sizeGrid = xzMesh(gl, pGrid.attr.position);
 
   gl.clearColor(0, 0, 0, 0);
   gl.clear(gl.COLOR_BUFFER_BIT);
@@ -248,6 +294,18 @@ export function main () {
     let world = M.translate(...state.entity.translate);
     world = m.mul(worldRotation, world);
     world = m.mul(M.scale(...state.entity.scale), world);
+
+    const scale = 100000;
+    const mGrid = m.mul(M.scale(scale, scale, scale), world);
+
+    gl.useProgram(pGrid.program);
+    gl.bindVertexArray(vaoGrid);
+    gl.uniformMatrix4fv(pGrid.unif.world, false, mGrid.mat.flat());
+    gl.uniformMatrix4fv(pGrid.unif.viewProjection, false, viewProjection.mat.flat());
+    gl.uniform4fv(pGrid.unif.color, [1, 1, 1, 0.25]);
+    gl.uniform1f(pGrid.unif.width, 1/1000);
+    gl.uniform1f(pGrid.unif.stroke, 1);
+    gl.drawArrays(gl.TRIANGLES, 0, sizeGrid);
 
     gl.useProgram(pMesh.program);
     gl.bindVertexArray(vaoMesh);
