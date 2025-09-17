@@ -122,7 +122,7 @@ const SHADERS = {
 
       void main() {
         vec2 c = v_worldPos / max(u_width, 1e-6);
-        vec2 d = abs(fract(c) - 0.5);
+        vec2 d = abs(fract(c));
         vec2 w = fwidth(c) * u_stroke;
 
         float line = min(u_color.w, 1.0 - min(min(d.x / w.x, d.y / w.y), 1.0));
@@ -231,8 +231,8 @@ export function main () {
   const vaoMesh = gl.createVertexArray();
   gl.bindVertexArray(vaoMesh);
 
-  const xCfg = { min: 0, max: 1100, step: 50 };
-  const zCfg = { min: 0, max: 1100, step: 50 };
+  const xCfg = { min: 0, max: 1000, step: 100 };
+  const zCfg = { min: 0, max: 1000, step: 100 };
   const sizeMesh = generateXyMesh(gl, pMesh.attr.position, xCfg, zCfg, true);
   const meshOffset = [-(xCfg.max / 2), 0, -(zCfg.max / 2)]
 
@@ -295,16 +295,15 @@ export function main () {
     world = m.mul(worldRotation, world);
     world = m.mul(M.scale(...state.entity.scale), world);
 
-    const scale = 100000;
-    const mGrid = m.mul(M.scale(scale, scale, scale), world);
+    const mGrid = m.mul(M.scale(xCfg.max, 1, zCfg.max), world);
 
     gl.useProgram(pGrid.program);
     gl.bindVertexArray(vaoGrid);
     gl.uniformMatrix4fv(pGrid.unif.world, false, mGrid.mat.flat());
     gl.uniformMatrix4fv(pGrid.unif.viewProjection, false, viewProjection.mat.flat());
     gl.uniform4fv(pGrid.unif.color, [1, 1, 1, 0.25]);
-    gl.uniform1f(pGrid.unif.width, 1/1000);
-    gl.uniform1f(pGrid.unif.stroke, 1);
+    gl.uniform1f(pGrid.unif.width, xCfg.step/xCfg.max);
+    gl.uniform1f(pGrid.unif.stroke, 2);
     gl.drawArrays(gl.TRIANGLES, 0, sizeGrid);
 
     gl.useProgram(pMesh.program);
