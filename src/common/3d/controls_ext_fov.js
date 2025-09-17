@@ -16,15 +16,15 @@ import { createOutPair as outputPair, createInput } from './controls.js';
  * }}
  */
 export function installControlExtFov(config) {
-  const ctrlEl = document.getElementById('form-controls');
-  if (ctrlEl == null) return { fov: 0, near: 0, far: 1 };
-
   let fov = config.fov.value;
   let near = config.near.value ?? 1;
   let far = config.far.value ?? 2000;
   const fovOut = outputPair('stat-fov-out', 'FOV', fov.toFixed(2));
   const nearOut = outputPair('stat-fov-near-out', 'FOV (near)', near.toFixed(2));
   const farOut = outputPair('stat-fov-far-out', 'FOV (far)', near.toFixed(2));
+
+  const ctrlEl = document.getElementById('form-controls');
+  if (ctrlEl == null) return { fov, near, far };
 
   /** @param {number} value */
   const setFov = value => {

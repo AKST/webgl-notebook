@@ -12,7 +12,7 @@ import { createOutPair as outputPair, createInput } from './controls.js';
  */
 export function installMiscNumKnob(id, initial, name, minmax, step) {
   const ctrlEl = document.getElementById('form-controls');
-  if (ctrlEl == null) return { value: 0 };
+  if (ctrlEl == null) return { value: initial };
 
   const statOut = outputPair(`stat-${id}-out`, name, initial.toFixed(2));
   let fudge = initial;

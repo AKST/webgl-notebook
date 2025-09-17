@@ -198,7 +198,7 @@ export function main () {
       translate: 100,
     },
     player: {
-      translate: [303.89, -728.00, -1227.38],
+      translate: [250.40, -728.00, -1018.11],
       rotation: [-0.96, -0.03, -0.12, 0.24],
     },
     entity: {
