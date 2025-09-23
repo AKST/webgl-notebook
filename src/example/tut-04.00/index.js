@@ -4,6 +4,7 @@
 import { vector as v, matrix as m } from '../../math/value.js';
 import * as math from '../../math/value.js';
 import { Matrix3d as M } from '../../common/matrix.js';
+import { initialConfigSource } from '../../common/3d/config_source.js';
 import { initControls } from '../../common/3d/controls.js';
 import { setLetterF3d as setLetterF } from '../../common/buffer.js';
 import { createShader, createProgram } from '../../common/init.js';
@@ -51,7 +52,9 @@ export function main () {
   /** @param {number} d */
   const degToRad = d => d * Math.PI / 180;
 
-  const state = initControls({
+  const config = initialConfigSource(undefined, { kind: 'local' });
+
+  const state = initControls(config, {
     window,
     entityDelta: {
       rotation: 1,

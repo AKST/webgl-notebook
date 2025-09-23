@@ -1,5 +1,5 @@
 
-class Debugger {
+export class Debugger {
   /** @type {any[][]} */
   #queue = [];
 
@@ -40,11 +40,13 @@ class Debugger {
 
 
 /**
+ * @param {{ showDebugger: boolean }} options
  * @returns {Debugger}
  */
-export function installDebugger() {
+export function installDebugger({ showDebugger }) {
   const ul = document.createElement('ul');
   ul.id = 'debugger';
+  if (!showDebugger) ul.style.display = 'none';
   document.body.appendChild(ul);
   return new Debugger(ul);
 }

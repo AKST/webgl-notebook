@@ -1,6 +1,7 @@
-import { createOutPair as outputPair, createInput } from './controls.js';
+import { createOutPair as outputPair } from './controls.js';
 
 /**
+ * @param {ConfigSource} config
  * @param {string} id
  * @param {number} initial
  * @param {string} name
@@ -10,7 +11,7 @@ import { createOutPair as outputPair, createInput } from './controls.js';
  *   value: number,
  * }}
  */
-export function installMiscNumKnob(id, initial, name, minmax, step) {
+export function installMiscNumKnob(config, id, initial, name, minmax, step) {
   const ctrlEl = document.getElementById('form-controls');
   if (ctrlEl == null) return { value: initial };
 
@@ -24,10 +25,7 @@ export function installMiscNumKnob(id, initial, name, minmax, step) {
   };
 
   const ctrlId = `ctrl-${id}`;
-  const fudgeEls = createInput(ctrlId, name, ...minmax, fudge, setValue, step);
-
-  ctrlEl.appendChild(fudgeEls.label);
-  ctrlEl.appendChild(fudgeEls.input);
+  config.monitorConfig(ctrlId, name, ...minmax, fudge, setValue, step);
 
   const statsEl = document.getElementById('stats-tranform-state');
   statsEl?.appendChild(statOut.label);

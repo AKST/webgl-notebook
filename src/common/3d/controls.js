@@ -1,4 +1,8 @@
 /**
+ * @import * as t from './type.ts';
+ *
+ * @typedef {{ label: HTMLLabelElement, input: HTMLInputElement }} InputElementPairs
+ * @typedef {{ label: HTMLElement, out: HTMLSpanElement }} OutputElementPairs
  *
  * @typedef {{
  *   bounds: [number, number],
@@ -31,6 +35,19 @@
  *     scale: number,
  *   },
  * }} Deltas
+ *
+ * @typedef {{
+ *   player: {
+ *     translate: OutputElementPairs,
+ *     rotation: OutputElementPairs,
+ *   },
+ *   entity: {
+ *     translate: OutputElementPairs,
+ *     rotation: OutputElementPairs,
+ *     scale: OutputElementPairs,
+ *   },
+ *   activeKeys: OutputElementPairs,
+ * }} DomLeafs
  *
  * @typedef {(
  *  | { kind: 'set-active-keys', keys: string[] }
@@ -69,7 +86,7 @@ class Unreachable extends Error {
  * @param {string} id
  * @param {string} name
  * @param {string} init
- * @returns {{ label: HTMLElement, out: HTMLElement }}
+ * @returns {OutputElementPairs}
  */
 export function createOutPair(id, name, init) {
   const label = document.createElement('strong');
@@ -83,37 +100,6 @@ export function createOutPair(id, name, init) {
   return { label, out };
 }
 
-
-/**
- * @param {string} id
- * @param {string} labelText
- * @param {number} min
- * @param {number} max
- * @param {number} value
- * @param {(v: number) => void} onChange
- * @param {string} [step]
- * @returns {{ label: HTMLLabelElement, input: HTMLInputElement }}
- */
-export const createInput = (id, labelText, min, max, value, onChange, step='any') => {
-  const label = document.createElement('label');
-  label.htmlFor = id
-  label.innerText = labelText;
-  const input = document.createElement('input');
-  input.id = id;
-  input.type = 'range';
-  input.max = '' + max;
-  input.min = '' + min;
-  input.step = step;
-  input.value = '' +value;
-
-  let mousedown = false;
-  input.addEventListener('change', () => onChange(parseFloat(input.value)));
-  input.addEventListener('mousedown', () => mousedown = true);
-  input.addEventListener('mouseup', () => mousedown = false);
-  input.addEventListener('mousemove', () => mousedown && onChange(parseFloat(input.value)));
-
-  return { label, input };
-}
 
 /**
  * @param {KeyboardState} keyboard
@@ -397,6 +383,7 @@ function * stateEffects(
 }
 
 /**
+ * @param {t.ConfigSource} config
  * @param {{
  *   screenLock?: boolean,
  *   window: Pick<Window, 'innerWidth' | 'innerHeight' | 'addEventListener'>,
@@ -407,7 +394,7 @@ function * stateEffects(
  * }} cfg
  * @returns {State}
  */
-export function initControls({
+export function initControls(config, {
   screenLock: useScreenLock = false,
   window,
   player: playerInit={},
@@ -415,9 +402,6 @@ export function initControls({
   entity: entityInit={},
   entityDelta = {},
 }) {
-  /** @type {[number, number]} */
-  const bounds = [window.innerWidth, window.innerHeight];
-
   /** @type {Deltas} */
   const deltas = {
     player: {
@@ -431,27 +415,10 @@ export function initControls({
     },
   };
 
-  /** @type {A3} */
-  const pTranslate = playerInit.translate ?? [0, 0, 0];
-
-  /** @type {A4} */
-  const pRotation = playerInit.rotation ?? [0, 0, 0, 0];
-
-  /** @type {A3} */
-  const eTranslate = entityInit.translate ?? [0, 0, 0];
-
-  /** @type {A3} */
-  const eScale = entityInit.scale ?? [1, 1, 1];
-
-  /** @type {A3} */
-  const eRotation = entityInit.rotation ?? [0, 0, 0];
-
   /** @type {ExternalEvent[]} */
   const exEvents = [];
 
-  /** @type {InternalEffect[]} */
-  const events = [];
-
+  /** @type {DomLeafs} */
   const domLeafs = {
     player: {
       translate: createOutPair('stat-player-translate', 'Player Translate', ''),
@@ -465,20 +432,72 @@ export function initControls({
     activeKeys: createOutPair('stat-activekeys', 'Active Keys', ''),
   };
 
-  let screenLockActive = false;
-
   /** @type {State} */
   const state = {
     events: exEvents,
-    screen: { bounds },
-    player: { translate: pTranslate, rotation: pRotation },
+    screen: { bounds: [window.innerWidth, window.innerHeight] },
+    player: {
+      translate: playerInit.translate ?? [0, 0, 0],
+      rotation: playerInit.rotation ?? [0, 0, 0, 0],
+    },
     entity: {
-      translate: eTranslate,
-      scale: eScale,
-      rotation: eRotation,
+      translate: entityInit.translate ?? [0, 0, 0],
+      scale: entityInit.scale ?? [1, 1, 1],
+      rotation: entityInit.rotation ?? [0, 0, 0],
     },
   };
 
+  wireKeyboardControls(
+    useScreenLock,
+    state,
+    deltas,
+    domLeafs,
+    exEvents,
+  );
+
+  const statsEl = document.getElementById('stats-tranform-state');
+  if (statsEl) {
+    statsEl.appendChild(domLeafs.player.translate.label);
+    statsEl.appendChild(domLeafs.player.translate.out);
+    statsEl.appendChild(domLeafs.player.rotation.label);
+    statsEl.appendChild(domLeafs.player.rotation.out);
+
+    statsEl.appendChild(domLeafs.entity.translate.label);
+    statsEl.appendChild(domLeafs.entity.translate.out);
+    statsEl.appendChild(domLeafs.entity.rotation.label);
+    statsEl.appendChild(domLeafs.entity.rotation.out);
+    statsEl.appendChild(domLeafs.entity.scale.label);
+    statsEl.appendChild(domLeafs.entity.scale.out);
+    statsEl.appendChild(domLeafs.activeKeys.label);
+    statsEl.appendChild(domLeafs.activeKeys.out);
+  }
+
+  config.monitorConfig(
+      'ctrl-entity-tr-d', 'E Translate Delta',
+      -1000, 1000, deltas.entity.translate,
+      v => deltas.entity.translate = v);
+
+  config.monitorConfig(
+      'ctrl-entity-ro-d', 'E Rotate Delta',
+      -10, 10, deltas.entity.rotation,
+      v => deltas.entity.rotation = v);
+
+  config.monitorConfig(
+      'ctrl-entity-sc-d', 'E Scale Delta',
+      -10, 10, deltas.entity.scale,
+      v => deltas.entity.scale = v);
+
+  return state;
+}
+
+/**
+ * @param {boolean} useScreenLock
+ * @param {State} state
+ * @param {Deltas} deltas
+ * @param {DomLeafs} domLeafs
+ * @param {ExternalEvent[]} exEvents
+ */
+function wireKeyboardControls(useScreenLock, state, deltas, domLeafs, exEvents) {
   /** @type {KeyboardState} */
   const keys = {
     w: undefined,
@@ -514,6 +533,9 @@ export function initControls({
     '<': undefined,
   };
 
+  /** @type {InternalEffect[]} */
+  const events = [];
+
   /**
    * @param {InternalEffect} effect
    * @param {number} t
@@ -533,23 +555,23 @@ export function initControls({
         break;
 
       case 'update-player-translate':
-        domLeafs.player.translate.out.innerText = `[${pTranslate.map(e => e.toFixed(2)).join(', ')}]`;
+        domLeafs.player.translate.out.innerText = `[${state.player.translate.map(e => e.toFixed(2)).join(', ')}]`;
         break;
 
       case 'update-player-rotation':
-        domLeafs.player.rotation.out.innerText = `[${pRotation.map(e => e.toFixed(2)).join(', ')}]`;
+        domLeafs.player.rotation.out.innerText = `[${state.player.rotation.map(e => e.toFixed(2)).join(', ')}]`;
         break;
 
       case 'update-entity-translate':
-        domLeafs.entity.translate.out.innerText = `[${eTranslate.map(e => e.toFixed(2)).join(', ')}]`;
+        domLeafs.entity.translate.out.innerText = `[${state.entity.translate.map(e => e.toFixed(2)).join(', ')}]`;
         break;
 
       case 'update-entity-rotation':
-        domLeafs.entity.rotation.out.innerText = `[${eRotation.map(e => e.toFixed(2)).join(', ')}]`;
+        domLeafs.entity.rotation.out.innerText = `[${state.entity.rotation.map(e => e.toFixed(2)).join(', ')}]`;
         break;
 
       case 'update-entity-scale':
-        domLeafs.entity.scale.out.innerText = `[${eScale.map(e => e.toFixed(2)).join(', ')}]`;
+        domLeafs.entity.scale.out.innerText = `[${state.entity.scale.map(e => e.toFixed(2)).join(', ')}]`;
         break;
 
       case 'locked-mouse-move':
@@ -598,16 +620,16 @@ export function initControls({
   });
 
   window.addEventListener('resize', () => {
-    bounds[0] = window.innerWidth;
-    bounds[1] = window.innerHeight;
+    state.screen.bounds[0] = window.innerWidth;
+    state.screen.bounds[1] = window.innerHeight;
     exEvents.push({ kind: 'resize' });
   });
 
   /** @param {KeyboardEvent} event */
   window.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
-      bounds[0] = window.innerWidth;
-      bounds[1] = window.innerHeight;
+      state.screen.bounds[0] = window.innerWidth;
+      state.screen.bounds[1] = window.innerHeight;
       exEvents.push({ kind: 'resize' });
     } else if (event.key === 'Shift') {
       const [press, unpress] = getShiftAsInput(keys);
@@ -643,6 +665,8 @@ export function initControls({
     events.push({ kind: 'locked-mouse-move', x, y });
   }
 
+  let screenLockActive = false;
+
   document.addEventListener('pointerlockchange', () => {
     screenLockActive = document.pointerLockElement === canvas;
     if (screenLockActive) {
@@ -658,50 +682,5 @@ export function initControls({
     });
   }
 
-  const statsEl = document.getElementById('stats-tranform-state');
-  if (statsEl) {
-    statsEl.appendChild(domLeafs.player.translate.label);
-    statsEl.appendChild(domLeafs.player.translate.out);
-    statsEl.appendChild(domLeafs.player.rotation.label);
-    statsEl.appendChild(domLeafs.player.rotation.out);
-
-    statsEl.appendChild(domLeafs.entity.translate.label);
-    statsEl.appendChild(domLeafs.entity.translate.out);
-    statsEl.appendChild(domLeafs.entity.rotation.label);
-    statsEl.appendChild(domLeafs.entity.rotation.out);
-    statsEl.appendChild(domLeafs.entity.scale.label);
-    statsEl.appendChild(domLeafs.entity.scale.out);
-    statsEl.appendChild(domLeafs.activeKeys.label);
-    statsEl.appendChild(domLeafs.activeKeys.out);
-  }
-
   internalEffect({ kind: 'init-stats' }, performance.now());
-
-  const ctrlEl = document.getElementById('form-controls');
-  if (ctrlEl) {
-    const etd = createInput(
-      'ctrl-entity-tr-d', 'E Translate Delta',
-      -1000, 1000, deltas.entity.translate,
-      v => deltas.entity.translate = v);
-
-    const erd = createInput(
-      'ctrl-entity-ro-d', 'E Rotate Delta',
-      -10, 10, deltas.entity.rotation,
-      v => deltas.entity.rotation = v);
-
-    const esd = createInput(
-      'ctrl-entity-sc-d', 'E Scale Delta',
-      -10, 10, deltas.entity.scale,
-      v => deltas.entity.scale = v);
-
-    ctrlEl.appendChild(etd.label);
-    ctrlEl.appendChild(etd.input);
-    ctrlEl.appendChild(erd.label);
-    ctrlEl.appendChild(erd.input);
-    ctrlEl.appendChild(esd.label);
-    ctrlEl.appendChild(esd.input);
-  }
-
-
-  return state;
 }

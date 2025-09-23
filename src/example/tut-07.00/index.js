@@ -6,6 +6,7 @@
 import { matrix as m, vector as v } from '../../math/value.js';
 import * as math from '../../math/value.js';
 import { Matrix3d as M } from '../../common/matrix.js';
+import { initialConfigSource } from '../../common/3d/config_source.js';
 import { initControls } from '../../common/3d/controls.js';
 import { installControlExtFov } from '../../common/3d/controls_ext_fov.js';
 import {
@@ -87,7 +88,9 @@ export function main () {
   const rldUnifLocation = getUniformLoc(gl, program, "u_reverseLightDirection");
   const clrUnifLocation = getUniformLoc(gl, program, "u_color");
 
-  const state = initControls({
+  const config = initialConfigSource(undefined, { kind: 'local' });
+
+  const state = initControls(config, {
     screenLock: true,
     window,
     playerDelta: {
@@ -109,7 +112,7 @@ export function main () {
     },
   });
 
-  const fov = installControlExtFov({
+  const fov = installControlExtFov(config, {
     fov: { value: 1.51, min: 0, max: 5 },
     far: { value: 10000, min: 1, max: 10000 },
     near: { value: 1, min: 0.1, max: 1000 },

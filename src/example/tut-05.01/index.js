@@ -4,6 +4,7 @@
 import { vector as v, matrix as m } from '../../math/value.js';
 import * as math from '../../math/value.js';
 import { Matrix3d as M } from '../../common/matrix.js';
+import { initialConfigSource } from '../../common/3d/config_source.js';
 import { initControls } from '../../common/3d/controls.js';
 import { installMiscNumKnob } from '../../common/3d/controls_ext_misc.js';
 import {
@@ -56,7 +57,9 @@ export function main () {
   const matUnifLocation = gl.getUniformLocation(program, "u_matrix")
   if (matUnifLocation == null) throw new Error("u_matrix");
 
-  const state = initControls({
+  const config = initialConfigSource(undefined, { kind: 'local' });
+
+  const state = initControls(config, {
     window,
     entityDelta: {
       rotation: 1,
@@ -69,7 +72,7 @@ export function main () {
     },
   });
 
-  const fudge = installMiscNumKnob('fudge', 1, 'View Fudge', [-10, 10]);
+  const fudge = installMiscNumKnob(config, 'fudge', 1, 'View Fudge', [-10, 10]);
 
   const posBuffer = gl.createBuffer();
   const posAttrLocation = gl.getAttribLocation(program, "a_position");

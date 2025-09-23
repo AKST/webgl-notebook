@@ -6,6 +6,7 @@
 import { vector as v, matrix as m } from '../../math/value.js';
 import * as math from '../../math/value.js';
 import { Matrix3d as M } from '../../common/matrix.js';
+import { initialConfigSource } from '../../common/3d/config_source.js';
 import { initControls } from '../../common/3d/controls.js';
 import { installControlExtFov } from '../../common/3d/controls_ext_fov.js';
 import { installMiscNumKnob } from '../../common/3d/controls_ext_misc.js';
@@ -63,7 +64,9 @@ export function main () {
   const matUnifLocation = gl.getUniformLocation(program, "u_matrix")
   if (matUnifLocation == null) throw new Error("u_matrix");
 
-  const state = initControls({
+  const config = initialConfigSource(undefined, { kind: 'local' });
+
+  const state = initControls(config, {
     window,
     entityDelta: {
       rotation: 1,
@@ -76,14 +79,14 @@ export function main () {
     },
   });
 
-  const fov = installControlExtFov({
+  const fov = installControlExtFov(config, {
     fov: { value: 1.51, min: 0, max: 5 },
     far: { value: 10000, min: 1, max: 10000 },
     near: { value: 1, min: 0.1, max: 1000 },
   });
 
-  const radius = installMiscNumKnob('radius', 200, 'Radius', [-2000, 2000]);
-  const countIn = installMiscNumKnob('count-in', 200, 'Count In', [1, 500], '1');
+  const radius = installMiscNumKnob(config, 'radius', 200, 'Radius', [-2000, 2000]);
+  const countIn = installMiscNumKnob(config, 'count-in', 200, 'Count In', [1, 500], '1');
 
   const vao = gl.createVertexArray();
   gl.bindVertexArray(vao);

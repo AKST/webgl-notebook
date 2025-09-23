@@ -5,6 +5,7 @@
  */
 import { matrix as m, vector as v } from '../../math/value.js';
 import * as math from '../../math/value.js';
+import { initialConfigSource } from '../../common/3d/config_source.js';
 import { initControls } from '../../common/3d/controls.js';
 import { installControlExtFov } from '../../common/3d/controls_ext_fov.js';
 import { installMiscNumKnob } from '../../common/3d/controls_ext_misc.js';
@@ -135,8 +136,14 @@ const SHADERS = {
   },
 };
 
-export function main () {
-  const dbg = installDebugger();
+/**
+ * @param {{
+ *   configSource: 'local' | 'message',
+ *   showDebug: boolean,
+ * }} options
+ */
+export function main (options) {
+  const dbg = installDebugger({ showDebugger: options.showDebug });
   const container = document.getElementById('container');
   if (container == null) throw new Error('container');
 
@@ -186,7 +193,9 @@ export function main () {
     },
   });
 
-  const state = initControls({
+  const config = initialConfigSource(dbg, { kind: options.configSource });
+
+  const state = initControls(config, {
     screenLock: false,
     window,
     playerDelta: {
@@ -208,14 +217,14 @@ export function main () {
     },
   });
 
-  const fov = installControlExtFov({
+  const fov = installControlExtFov(config, {
     fov: { value: 1.51, min: 0, max: 5 },
     far: { value: 10000, min: 1, max: 10000 },
     near: { value: 1, min: 0.1, max: 1000 },
   });
 
-  const technology = installMiscNumKnob('techology', 30, 'Technology', [0, 100]);
-  const alpha = installMiscNumKnob('alpha', 2/3, 'Alpha', [0, 1]);
+  const technology = installMiscNumKnob(config, 'technology', 30, 'Technology', [0, 100]);
+  const alpha = installMiscNumKnob(config, 'alpha', 2/3, 'Alpha', [0, 1]);
 
   /**
    * @param {number} labour

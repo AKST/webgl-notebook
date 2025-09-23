@@ -1,24 +1,26 @@
 /**
+ * @import { ConfigSource } from './type.ts';
  * @typedef {{ value: number, min: number, max: number }} InputCfg
  */
-import { createOutPair as outputPair, createInput } from './controls.js';
+import { createOutPair as outputPair } from './controls.js';
 
 /**
+ * @param {ConfigSource} config
  * @param {{
  *   fov: InputCfg,
  *   near: Partial<InputCfg>,
  *   far: Partial<InputCfg>,
- * }} config
+ * }} options
  * @returns {{
  *   fov: number,
  *   near: number,
  *   far: number,
  * }}
  */
-export function installControlExtFov(config) {
-  let fov = config.fov.value;
-  let near = config.near.value ?? 1;
-  let far = config.far.value ?? 2000;
+export function installControlExtFov(config, options) {
+  let fov = options.fov.value;
+  let near = options.near.value ?? 1;
+  let far = options.far.value ?? 2000;
   const fovOut = outputPair('stat-fov-out', 'FOV', fov.toFixed(2));
   const nearOut = outputPair('stat-fov-near-out', 'FOV (near)', near.toFixed(2));
   const farOut = outputPair('stat-fov-far-out', 'FOV (far)', near.toFixed(2));
@@ -44,44 +46,35 @@ export function installControlExtFov(config) {
     farOut.out.innerText = value.toFixed(2);
   };
 
-  const fovEls = createInput(
+  config.monitorConfig(
     'ctrl-perspective-fov',
     'Field of View',
     0, 5, fov,
     setFov,
   );
 
-  ctrlEl.appendChild(fovEls.label);
-  ctrlEl.appendChild(fovEls.input);
-
   // defaults for near & far, because fov is
   // radians it doesn't make sense to use the
   // same scale.
   const DEFMIN = -2000, DEFMAX = +2000;
 
-  const nearEls = createInput(
+  config.monitorConfig(
     'ctrl-perspective-fov',
     'FOV (near)',
-    config.near.min ?? DEFMIN,
-    config.near.max ?? DEFMAX,
+    options.near.min ?? DEFMIN,
+    options.near.max ?? DEFMAX,
     near,
     setNear,
   );
 
-  ctrlEl.appendChild(nearEls.label);
-  ctrlEl.appendChild(nearEls.input);
-
-  const farEls = createInput(
+  config.monitorConfig(
     'ctrl-perspective-fov',
     'FOV (far)',
-    config.far.min ?? DEFMIN,
-    config.far.max ?? DEFMAX,
+    options.far.min ?? DEFMIN,
+    options.far.max ?? DEFMAX,
     far,
     setFar,
   );
-
-  ctrlEl.appendChild(farEls.label);
-  ctrlEl.appendChild(farEls.input);
 
   const statsEl = document.getElementById('stats-tranform-state');
   if (statsEl) {
